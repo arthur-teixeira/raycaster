@@ -1,5 +1,6 @@
 #include <raylib.h>
 #include <stdio.h>
+#include <math.h>
 
 #define mapWidth 24
 #define mapHeight 24
@@ -45,7 +46,26 @@ int main(int argc, char **argv) {
   while (!WindowShouldClose()) {
     BeginDrawing();
 
-    DrawText("Hello world", posX, posY, 69, RED);
+    for (int x = 0; x < screenWidth; x++) {
+      double cameraX = 2 * x / (double)screenWidth - 1; // The x coordinate in camera space
+      double rayDirX = dirX + planeX * cameraX;
+      double rayDirY = dirY + planeY * cameraX;
+
+      // Which box of the map we are currently in.
+      int currentMapSquareX = (int)posX;
+      int currentMapSquareY = (int)posY;
+
+      // Length of the ray from the current position to the next x-y side
+      double sideDistX;
+      double sideDistY;
+
+      // Distance from one x-y side to the next x-y side
+      double deltaDistX = (rayDirX == 0) ? 1e30 : fabs(1 / rayDirX);
+      double deltaDistY = (rayDirY == 0) ? 1e30 : fabs(1 / rayDirY);
+
+      int stepX;
+      int stepY;
+    }
 
     EndDrawing();
   }
