@@ -62,14 +62,13 @@ Color getColor(int location) {
 }
 
 int main(void) {
-  double posX = 22, posY = 12;
+  double posX = 3, posY = 3;
   double dirX = -1, dirY = 0;
   double planeX = 0, planeY = 0.66f;
 
-  double time = 0;
-  double oldTime = 0;
-
   InitWindow(screenWidth, screenHeight, "Raycaster");
+  SetTargetFPS(60);
+
   while (!WindowShouldClose()) {
     BeginDrawing();
 
@@ -144,49 +143,48 @@ int main(void) {
       DrawLine(x, drawStart, x, drawEnd, color);
     }
 
-    oldTime = time;
-    time = GetTime();
-    double frameTime = time - oldTime; // GetFrameTime()?
+    double frameTime = GetFrameTime();
 
-    double moveSpeed = frameTime * 5.0f;
-    double rotSpeed = frameTime * 3.0f;
-    if (IsKeyPressed(KEY_UP)) {
-        if (worldMap[(int)(posX + dirX * moveSpeed)][(int)posY] == 0) {
-            posX += dirX *moveSpeed;
-        }
-        if (worldMap[(int)posX][(int)(posY + dirY * moveSpeed)] == 0) {
-            posY += dirY *moveSpeed;
-        }
-    }
-    if (IsKeyPressed(KEY_DOWN)) {
-        if (worldMap[(int)(posX - dirX * moveSpeed)][(int)posY] == 0) {
-            posX += dirX *moveSpeed;
-        }
-        if (worldMap[(int)posX][(int)(posY - dirY * moveSpeed)] == 0) {
-            posY += dirY *moveSpeed;
-        }
-    }
-    if (IsKeyPressed(KEY_LEFT)) {
-        double oldDirX = dirX;
-        dirX = dirX * cos(-rotSpeed) - dirY * sin(-rotSpeed);
-        dirY = oldDirX * sin(-rotSpeed) + dirY * cos(-rotSpeed);
+    double moveSpeed = frameTime * 2.0f;
+    double rotSpeed = frameTime;
 
-        double oldPlaneX = planeX;
-        planeX = planeX * cos(-rotSpeed) - planeY * sin(-rotSpeed);
-        planeY = oldPlaneX * sin(-rotSpeed) + planeY * cos(-rotSpeed);
-    }
-    if (IsKeyPressed(KEY_RIGHT)) {
-        double oldDirX = dirX;
-        dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
-        dirY = oldDirX * sin(rotSpeed) + dirY * cos(rotSpeed);
-
-        double oldPlaneX = planeX;
-        planeX = planeX * cos(rotSpeed) - planeY * sin(rotSpeed);
-        planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
-    }
-
-
+    ClearBackground(BLACK);
     EndDrawing();
+
+    if (IsKeyDown(KEY_UP)) {
+      if (worldMap[(int)(posX + dirX * moveSpeed)][(int)posY] == 0) {
+        posX += dirX * moveSpeed;
+      }
+      if (worldMap[(int)posX][(int)(posY + dirY * moveSpeed)] == 0) {
+        posY += dirY * moveSpeed;
+      }
+    }
+    if (IsKeyDown(KEY_DOWN)) {
+      if (worldMap[(int)(posX - dirX * moveSpeed)][(int)posY] == 0) {
+        posX += dirX * moveSpeed;
+      }
+      if (worldMap[(int)posX][(int)(posY - dirY * moveSpeed)] == 0) {
+        posY += dirY * moveSpeed;
+      }
+    }
+    if (IsKeyDown(KEY_RIGHT)) {
+      double oldDirX = dirX;
+      dirX = dirX * cos(-rotSpeed) - dirY * sin(-rotSpeed);
+      dirY = oldDirX * sin(-rotSpeed) + dirY * cos(-rotSpeed);
+
+      double oldPlaneX = planeX;
+      planeX = planeX * cos(-rotSpeed) - planeY * sin(-rotSpeed);
+      planeY = oldPlaneX * sin(-rotSpeed) + planeY * cos(-rotSpeed);
+    }
+    if (IsKeyDown(KEY_LEFT)) {
+      double oldDirX = dirX;
+      dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
+      dirY = oldDirX * sin(rotSpeed) + dirY * cos(rotSpeed);
+
+      double oldPlaneX = planeX;
+      planeX = planeX * cos(rotSpeed) - planeY * sin(rotSpeed);
+      planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
+    }
   }
 
   return 0;
