@@ -11,6 +11,8 @@
 #define mapWidth 24
 #define mapHeight 24
 
+#define ARRAY_LEN(xs) sizeof(xs) / sizeof(xs[0])
+
 int worldMap[mapWidth][mapHeight] = {
     {4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 7, 7, 7, 7, 7, 7, 7, 7},
     {4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 7},
@@ -37,22 +39,40 @@ int worldMap[mapWidth][mapHeight] = {
     {4, 0, 0, 0, 0, 0, 0, 0, 0, 4, 6, 0, 6, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2},
     {4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3}};
 
-uint32_t screen_buffer[screenHeight][screenWidth];
+Color screen_buffer[screenHeight][screenWidth];
 
-void draw_buffer(uint32_t buffer[screenHeight][screenWidth]) {
+void draw_buffer(Color buffer[screenHeight][screenWidth]) {
   for (int y = 0; y < screenHeight; y++) {
     for (int x = 0; x < screenWidth; x++) {
-      Color color = GetColor(buffer[y][x] << 8 | 0xFF);
-      DrawPixel(x, y, color);
+      DrawPixel(x, y, buffer[y][x]);
     }
   }
 }
 
-void clear_buffer(uint32_t buffer[screenHeight][screenWidth]) {
+void clear_buffer(Color buffer[screenHeight][screenWidth]) {
   for (int y = 0; y < screenHeight; y++) {
     for (int x = 0; x < screenWidth; x++) {
-      buffer[y][x] = 0;
+      buffer[y][x] = BLACK;
     }
+  }
+}
+
+typedef struct {
+  Color *colors;
+  size_t w;
+  size_t h;
+} ImageTexture;
+
+void LoadImageTextures(char **images, size_t n, ImageTexture *out) {
+  for (size_t i = 0; i < n; i++) {
+    Image img = LoadImage(images[i]);
+    out[i] = (ImageTexture){
+        .colors = LoadImageColors(img),
+        .w = img.width,
+        .h = img.height,
+    };
+
+    UnloadImage(img);
   }
 }
 
@@ -64,35 +84,14 @@ int main(void) {
   InitWindow(screenWidth, screenHeight, "Raycaster");
   SetTargetFPS(60);
 
-  unsigned int textures[8][texWidth * texHeight];
-
-  for (int x = 0; x < texWidth; x++) {
-    for (int y = 0; y < texHeight; y++) {
-      int y_color = (y * 256 / texHeight);
-      int xor_color = (x * 256 / texWidth) ^ y_color;
-      int xy_color = y * 128 / texHeight + x * 128 / texWidth;
-
-      // flat red with black cross
-      textures[0][texWidth * y + x] =
-          (65536 * 254 * (x != y && x != texWidth - y));
-      // Sloped grayscale
-      textures[1][texWidth * y + x] =
-          xy_color + 256 * xy_color + 65536 * xy_color;
-      // sloped yellow gradient
-      textures[2][texWidth * y + x] = 256 * xy_color + 65536 * xy_color;
-      // xor greyscale
-      textures[3][texWidth * y + x] =
-          xor_color + 256 * xor_color + 65536 * xor_color;
-      // xor green
-      textures[4][texWidth * y + x] = 256 * xor_color;
-      // red bricks
-      textures[5][texWidth * y + x] = 65536 * 192 * (x % 16 && y % 16);
-      // red gradient
-      textures[6][texWidth * y + x] = 65536 * y_color;
-      // flat grey texture
-      textures[7][texWidth * y + x] = 128 + 256 * 128 + 65536 * 128;
-    }
-  }
+  char *images[] = {
+      "./assets/eagle.png",       "./assets/redbrick.png",
+      "./assets/purplestone.png", "./assets/greystone.png",
+      "./assets/bluestone.png",   "./assets/mossy.png",
+      "./assets/wood.png",        "./assets/colorstone.png",
+  };
+  ImageTexture image_textures[8];
+  LoadImageTextures(images, ARRAY_LEN(images), image_textures);
 
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -174,6 +173,7 @@ int main(void) {
 
       // -1 so that texture 0 can be used
       int texture_num = worldMap[mapX][mapY] - 1;
+      ImageTexture tex = image_textures[texture_num];
 
       double wall_x; // Where exactly the wall was hit
       if (side == 0) {
@@ -194,16 +194,16 @@ int main(void) {
       double texPos = (drawStart - (screenHeight + lineHeight) / 2) * step;
 
       for (int y = drawStart; y < drawEnd; y++) {
-
         // Cast the texture coordinate to integer, and mask with (texHeight - 1)
         // in case of overflow
         int tex_y = (int)texPos & (texHeight - 1);
 
         texPos += step;
 
-        uint32_t color = textures[texture_num][texHeight * tex_y + tex_x];
+        Color color = tex.colors[tex_y * tex.w + (tex_x % tex.w)];
+
         if (side == 1) {
-          color = (color >> 1) & 8355711;
+          color.a /= 2;
         }
 
         screen_buffer[y][x] = color;
@@ -213,6 +213,12 @@ int main(void) {
     draw_buffer(screen_buffer);
     clear_buffer(screen_buffer);
     double frameTime = GetFrameTime();
+
+    char fps_buf[10];
+    double fps = 1 / frameTime;
+    sprintf(fps_buf, "%d\n", (int)ceil(fps));
+
+    DrawText(fps_buf, 0, 0, 10, RED);
 
     double moveSpeed = frameTime * 2.0f;
     double rotSpeed = frameTime * 0.75f;
