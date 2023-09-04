@@ -57,22 +57,17 @@ void clear_buffer(Color buffer[screenHeight][screenWidth]) {
   }
 }
 
-typedef struct {
-  Color *colors;
-  size_t w;
-  size_t h;
-} ImageTexture;
-
-void LoadImageTextures(char **images, size_t n, ImageTexture *out) {
+void LoadImageTextures(char **images, size_t n, Color **out) {
   for (size_t i = 0; i < n; i++) {
     Image img = LoadImage(images[i]);
-    out[i] = (ImageTexture){
-        .colors = LoadImageColors(img),
-        .w = img.width,
-        .h = img.height,
-    };
-
+    out[i] = LoadImageColors(img);
     UnloadImage(img);
+  }
+}
+
+void LoadTextures(char **images, size_t n, Texture2D *out) {
+  for (size_t i = 0; i < n; i++) {
+    out[i] = LoadTexture(images[i]);
   }
 }
 
@@ -90,8 +85,11 @@ int main(void) {
       "./assets/bluestone.png",   "./assets/mossy.png",
       "./assets/wood.png",        "./assets/colorstone.png",
   };
-  ImageTexture image_textures[8];
+  Color *image_textures[ARRAY_LEN(images)];
   LoadImageTextures(images, ARRAY_LEN(images), image_textures);
+
+  Texture rl_textures[ARRAY_LEN(images)];
+  LoadTextures(images, ARRAY_LEN(images), rl_textures);
 
   while (!WindowShouldClose()) {
     BeginDrawing();
@@ -173,7 +171,7 @@ int main(void) {
 
       // -1 so that texture 0 can be used
       int texture_num = worldMap[mapX][mapY] - 1;
-      ImageTexture tex = image_textures[texture_num];
+      Color *tex = image_textures[texture_num];
 
       double wall_x; // Where exactly the wall was hit
       if (side == 0) {
@@ -191,7 +189,8 @@ int main(void) {
       // How much to increase texture coordinate per screen pixel
       double step = (double)texHeight / lineHeight;
 
-      double texPos = (drawStart - (screenHeight + lineHeight) / 2) * step;
+      double texPos =
+          (drawStart - ((double)screenHeight + lineHeight) / 2) * step;
 
       for (int y = drawStart; y < drawEnd; y++) {
         // Cast the texture coordinate to integer, and mask with (texHeight - 1)
@@ -200,8 +199,7 @@ int main(void) {
 
         texPos += step;
 
-        Color color = tex.colors[tex_y * tex.w + (tex_x % tex.w)];
-
+        Color color = tex[tex_y * texWidth + (tex_x % texWidth)];
         if (side == 1) {
           color.a /= 2;
         }
