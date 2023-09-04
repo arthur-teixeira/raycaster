@@ -189,9 +189,9 @@ int main(void) {
       }
 
       // How much to increase texture coordinate per screen pixel
-      double step = 1.0 * texHeight / texWidth;
+      double step = (double)texHeight / lineHeight;
 
-      double texPos = (drawStart - screenHeight / 2 + lineHeight / 2) * step;
+      double texPos = (drawStart - (screenHeight + lineHeight) / 2) * step;
 
       for (int y = drawStart; y < drawEnd; y++) {
 
