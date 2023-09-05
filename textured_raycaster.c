@@ -57,6 +57,7 @@ double posX = 22.0, posY = 11.5;
 double dirX = -1, dirY = 0;
 double planeX = 0, planeY = 0.66f;
 
+// https://www.reddit.com/r/raylib/comments/hcglzh/comment/g212jbl/?utm_source=share&utm_medium=web2x&context=3
 void DrawFrame(Texture2D frame_tex) {
   UpdateTexture(frame_tex, screen_buffer);
   DrawTexture(frame_tex, 0, 0, WHITE);
