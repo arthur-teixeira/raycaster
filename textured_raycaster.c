@@ -4,14 +4,21 @@
 #include <stdio.h>
 #include <string.h>
 
+#define FULLSCREEN 0
+#define DEBUG 1
+
+#if FULLSCREEN
+#define screenWidth 1440
+#define screenHeight 1080
+#else
 #define screenWidth 640
 #define screenHeight 480
+#endif
 #define texWidth 64
 #define texHeight 64
 #define mapWidth 24
 #define mapHeight 24
 
-#define DEBUG 1
 
 #define ARRAY_LEN(xs) sizeof(xs) / sizeof(xs[0])
 
@@ -121,7 +128,10 @@ void UpdatePosition(float frameTime) {
 }
 
 void RenderFloorAndCeiling() {
-  for (int y = 0; y < screenHeight; y++) {
+  // Vertical position of the camera
+  float posZ = (float)screenHeight / 2;
+
+  for (int y = (int)posZ; y < screenHeight; y++) {
     // Leftmost ray
     Vector2 rayDir0 = {
         .x = dirX - planeX,
@@ -136,9 +146,6 @@ void RenderFloorAndCeiling() {
 
     // current y position compared to the center of the screen
     int p = y - screenHeight / 2;
-
-    // Vertical position of the camera
-    float posZ = (float)screenHeight / 2;
 
     // Horizontal distance from the camera to the floor for the current row
     float rowDistance = posZ / p;
@@ -170,10 +177,10 @@ void RenderFloorAndCeiling() {
       int floorTexture = 3;
       int ceilTexture = 6;
 
+      Color color;
       // floor
-      Color color = image_textures[floorTexture][texWidth * ty + tx];
+      color = image_textures[floorTexture][texWidth * ty + tx];
       color.a /= 2;
-
       screen_buffer[y * screenWidth + x] = color;
 
       // Ceiling
