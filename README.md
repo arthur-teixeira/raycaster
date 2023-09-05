@@ -22,6 +22,6 @@ $ ./build.sh
 $ ./bin/raycaster
 ```
 
-##To-do list
+## To-do list
 - [ ] Find a way to invert the frame buffer matrix, so that we process lines horizontally
-- [ ] Try to render whole texture at once?
+- [X] Try to render whole texture at once?
