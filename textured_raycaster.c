@@ -62,7 +62,7 @@ typedef struct {
 
 #define numSprites 19
 
-Sprite sprite[numSprites] = {
+Sprite sprites[numSprites] = {
     {20.5, 11.5, 10}, // green light in front of playerstart
     // green lights in every room
     {18.5, 4.5, 10},
@@ -92,9 +92,8 @@ Sprite sprite[numSprites] = {
 Color screen_buffer[screenHeight * screenWidth];
 double ZBuffer[screenWidth];
 
-int spriteOrder[numSprites];
-double spriteDistance[numSprites];
-
+int spriteOrder[numSprites] = {0};
+double spriteDistance[numSprites] = {0.0};
 
 char *images[] = {
     "./assets/eagle.png",       "./assets/redbrick.png",
@@ -360,11 +359,50 @@ void RenderWalls() {
   }
 }
 
-// TODO
+int partition(int *order, double *dist, int p, int r) {
+  int x = order[p];
+  int i = p - 1;
+  int j = r + 1;
+
+  while (true) {
+    while (true) {
+      j -= 1;
+      if (order[j] <= x) {
+        break;
+      }
+    }
+
+    while (true) {
+      i += 1;
+      if (order[i] >= x) {
+        break;
+      }
+    }
+
+    if (i < j) {
+      int temp = order[i];
+      order[i] = order[j];
+      order[j] = temp;
+
+      double dtemp = dist[i];
+      dist[i] = dist[j];
+      dist[j] = dtemp;
+    } else {
+      return j;
+    }
+  }
+}
+
+void quicksort(int *order, double *dist, int p, int r) {
+  if (p < r) {
+    int q = partition(order, dist, p, r);
+    quicksort(order, dist, p, q);
+    quicksort(order, dist, q + 1, r);
+  }
+}
+
 void sortSprites(int *order, double *dist, int amount) {
-    (void)order;
-    (void)dist;
-    (void)amount;
+  quicksort(order, dist, 0, amount - 1);
 }
 
 Texture2D LoadInitialFrame() {
@@ -395,15 +433,87 @@ int main(void) {
 
     for (int i = 0; i < numSprites; i++) {
       spriteOrder[i] = i;
-      double xComponent = posX - sprite[i].x;
-      double yComponent = posY - sprite[i].y;
+      double xComponent = posX - sprites[i].x;
+      double yComponent = posY - sprites[i].y;
       spriteDistance[i] = (xComponent * xComponent + yComponent * yComponent);
     }
 
     sortSprites(spriteOrder, spriteDistance, numSprites);
 
-    // TODO
     for (int i = 0; i < numSprites; i++) {
+      // Translate position to relative to camera
+      Vector2 sprite = {
+          .x = sprites[spriteOrder[i]].x - posX,
+          .y = sprites[spriteOrder[i]].y - posY,
+      };
+
+      // Transform sprite with the inverse camera matrix
+      // [ planeX  dirX ] ^-1               1                [ dirY   -dirX   ]
+      // [              ]    = ----------------------------- [                ]
+      // [ planeY  dirY ]      planeX * dirY - dirX * planeY [ -planeY planeX ]
+
+      double invDet = 1 / (planeX * dirY - dirX * planeY);
+
+      Vector2 transform = {
+          .x = invDet * (dirY * sprite.x - dirX * sprite.y),
+          .y = invDet * (-planeY * sprite.x + planeX * sprite.y),
+      };
+
+      int spriteScreenX =
+          (int)((screenWidth / 2) * (1 + transform.x / transform.y));
+
+      // Using the y component of the transformed vector prevents fisheye
+      int spriteHeight = (int)fabs(screenHeight / transform.y);
+
+      // Calculate lowest and highest pixels
+      int drawStartY = -spriteHeight / 2 + screenHeight / 2;
+      if (drawStartY < 0) {
+        drawStartY = 0;
+      }
+      int drawEndY = spriteHeight / 2 + screenHeight / 2;
+      if (drawEndY >= screenHeight) {
+        drawEndY = screenHeight - 1;
+      }
+
+      // Calculate sprite width
+      int spriteWidth = spriteHeight;
+
+      int drawStartX = -spriteWidth / 2 + spriteScreenX;
+
+      if (drawStartX < 0) {
+        drawStartX = 0;
+      }
+      int drawEndX = spriteWidth / 2 + spriteScreenX;
+      if (drawEndX >= screenWidth) {
+        drawEndX = screenWidth - 1;
+      }
+
+      // Loop through vertical stripes of the sprite on screen
+      for (int stripe = drawStartX; stripe < drawEndX; stripe++) {
+        int texX = (int)(256 * (stripe - (-spriteWidth / 2 + spriteScreenX)) *
+                         texWidth / spriteWidth) /
+                   256;
+
+        // If
+        // 1) it is in front of the camera plane
+        // 2) it is on the screen (left)
+        // 3) it is on the screen (right)
+        // 4) ZBuffer with perpendicular distance
+        if ((transform.y > 0) && (stripe > 0) && (stripe < screenWidth) &&
+            (transform.y < ZBuffer[stripe])) {
+
+          for (int y = drawStartY; y < drawEndY; y++) {
+            // 256 and 128 factors to avoid floats
+            int d = y * 256 - screenHeight * 128 + spriteHeight / 128;
+            int texY = (d * texHeight) / (spriteHeight * 256);
+            Color color = image_textures[sprites[spriteOrder[i]].texture]
+                                        [texWidth * texY + texX];
+            screen_buffer[y * screenWidth + stripe] = color;
+            if (color.r > 0 || color.g > 0 || color.b > 0) {
+            }
+          }
+        }
+      }
     }
 
     DrawFrame(frame);
