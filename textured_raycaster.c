@@ -23,8 +23,8 @@
 #define ARRAY_LEN(xs) sizeof(xs) / sizeof(xs[0])
 
 typedef enum {
-    SIDE_NS,
-    SIDE_WE,
+  SIDE_NS,
+  SIDE_WE,
 } SideHit;
 
 int worldMap[mapWidth][mapHeight] = {
@@ -54,13 +54,55 @@ int worldMap[mapWidth][mapHeight] = {
     {2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5},
 };
 
+typedef struct {
+  double x;
+  double y;
+  int texture;
+} Sprite;
+
+#define numSprites 19
+
+Sprite sprite[numSprites] = {
+    {20.5, 11.5, 10}, // green light in front of playerstart
+    // green lights in every room
+    {18.5, 4.5, 10},
+    {10.0, 4.5, 10},
+    {10.0, 12.5, 10},
+    {3.5, 6.5, 10},
+    {3.5, 20.5, 10},
+    {3.5, 14.5, 10},
+    {14.5, 20.5, 10},
+
+    // row of pillars in front of wall: fisheye test
+    {18.5, 10.5, 9},
+    {18.5, 11.5, 9},
+    {18.5, 12.5, 9},
+
+    // some barrels around the map
+    {21.5, 1.5, 8},
+    {15.5, 1.5, 8},
+    {16.0, 1.8, 8},
+    {16.2, 1.2, 8},
+    {3.5, 2.5, 8},
+    {9.5, 15.5, 8},
+    {10.0, 15.1, 8},
+    {10.5, 15.8, 8},
+};
+
 Color screen_buffer[screenHeight * screenWidth];
+double ZBuffer[screenWidth];
+
+int spriteOrder[numSprites];
+double spriteDistance[numSprites];
+
 
 char *images[] = {
     "./assets/eagle.png",       "./assets/redbrick.png",
     "./assets/purplestone.png", "./assets/greystone.png",
     "./assets/bluestone.png",   "./assets/mossy.png",
     "./assets/wood.png",        "./assets/colorstone.png",
+    "./assets/barrel.png",      "./assets/pillar.png",
+    "./assets/greenlight.png",
 };
 
 Color *image_textures[ARRAY_LEN(images)];
@@ -312,7 +354,17 @@ void RenderWalls() {
 
       screen_buffer[y * screenWidth + x] = color;
     }
+
+    // ZBuffer used for sprites
+    ZBuffer[x] = perpendicularWallDistance;
   }
+}
+
+// TODO
+void sortSprites(int *order, double *dist, int amount) {
+    (void)order;
+    (void)dist;
+    (void)amount;
 }
 
 Texture2D LoadInitialFrame() {
@@ -340,6 +392,19 @@ int main(void) {
 
     RenderFloorAndCeiling();
     RenderWalls();
+
+    for (int i = 0; i < numSprites; i++) {
+      spriteOrder[i] = i;
+      double xComponent = posX - sprite[i].x;
+      double yComponent = posY - sprite[i].y;
+      spriteDistance[i] = (xComponent * xComponent + yComponent * yComponent);
+    }
+
+    sortSprites(spriteOrder, spriteDistance, numSprites);
+
+    // TODO
+    for (int i = 0; i < numSprites; i++) {
+    }
 
     DrawFrame(frame);
 
