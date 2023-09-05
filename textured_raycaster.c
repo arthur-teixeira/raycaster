@@ -50,14 +50,6 @@ void draw_buffer(Color buffer[screenHeight][screenWidth]) {
   }
 }
 
-void clear_buffer(Color buffer[screenHeight][screenWidth]) {
-  for (int y = 0; y < screenHeight; y++) {
-    for (int x = 0; x < screenWidth; x++) {
-      buffer[y][x] = BLACK;
-    }
-  }
-}
-
 void LoadImageTextures(char **images, size_t n, Color **out) {
   for (size_t i = 0; i < n; i++) {
     Image img = LoadImage(images[i]);
@@ -94,6 +86,7 @@ int main(void) {
 
   while (!WindowShouldClose()) {
     BeginDrawing();
+    ClearBackground(BLANK);
 
     // Floor casting
     for (int y = 0; y < screenHeight; y++) {
@@ -274,14 +267,9 @@ int main(void) {
     }
 
     draw_buffer(screen_buffer);
-    clear_buffer(screen_buffer);
     double frameTime = GetFrameTime();
 
-    char fps_buf[10];
-    double fps = 1 / frameTime;
-    sprintf(fps_buf, "%d\n", (int)ceil(fps));
-
-    DrawText(fps_buf, 0, 0, 10, RED);
+    DrawText(TextFormat("%d", (int)(1/frameTime)), 0, 0, 10, RED);
 
     double moveSpeed = frameTime * 2.0f;
     double rotSpeed = frameTime * 0.75f;
