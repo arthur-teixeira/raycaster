@@ -8,19 +8,24 @@
 #define DEBUG 1
 
 #if FULLSCREEN
-#define screenWidth 1440
+#define screenWidth 1920
 #define screenHeight 1080
 #else
 #define screenWidth 640
 #define screenHeight 480
 #endif
+
 #define texWidth 64
 #define texHeight 64
 #define mapWidth 24
 #define mapHeight 24
 
-
 #define ARRAY_LEN(xs) sizeof(xs) / sizeof(xs[0])
+
+typedef enum {
+    SIDE_NS,
+    SIDE_WE,
+} SideHit;
 
 int worldMap[mapWidth][mapHeight] = {
     {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 4, 4, 6, 4, 4, 6, 4, 6, 4, 4, 4, 6, 4},
@@ -88,42 +93,42 @@ void DrawFrameCounter(float frameTime) {
   DrawText(TextFormat("%d", (int)(1 / frameTime)), 0, 0, 10, RED);
 }
 
+void Move(double moveSpeed, signed char factor) {
+  if (worldMap[(int)(posX + dirX * moveSpeed)][(int)posY] == 0) {
+    posX += factor * dirX * moveSpeed;
+  }
+  if (worldMap[(int)posX][(int)(posY + dirY * moveSpeed)] == 0) {
+    posY += factor * dirY * moveSpeed;
+  }
+}
+
+void Rotate(double rotSpeed, signed char factor) {
+  double oldDirX = dirX;
+  rotSpeed = factor * rotSpeed;
+
+  dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
+  dirY = oldDirX * sin(rotSpeed) + dirY * cos(rotSpeed);
+
+  double oldPlaneX = planeX;
+  planeX = planeX * cos(rotSpeed) - planeY * sin(rotSpeed);
+  planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
+}
+
 void UpdatePosition(float frameTime) {
   double moveSpeed = frameTime * 2.0f;
-  double rotSpeed = frameTime * 0.75f;
-  if (IsKeyDown(KEY_UP)) {
-    if (worldMap[(int)(posX + dirX * moveSpeed)][(int)posY] == 0) {
-      posX += dirX * moveSpeed;
-    }
-    if (worldMap[(int)posX][(int)(posY + dirY * moveSpeed)] == 0) {
-      posY += dirY * moveSpeed;
-    }
-  }
-  if (IsKeyDown(KEY_DOWN)) {
-    if (worldMap[(int)(posX - dirX * moveSpeed)][(int)posY] == 0) {
-      posX -= dirX * moveSpeed;
-    }
-    if (worldMap[(int)posX][(int)(posY - dirY * moveSpeed)] == 0) {
-      posY -= dirY * moveSpeed;
-    }
-  }
-  if (IsKeyDown(KEY_RIGHT)) {
-    double oldDirX = dirX;
-    dirX = dirX * cos(-rotSpeed) - dirY * sin(-rotSpeed);
-    dirY = oldDirX * sin(-rotSpeed) + dirY * cos(-rotSpeed);
+  double rotSpeed = frameTime;
 
-    double oldPlaneX = planeX;
-    planeX = planeX * cos(-rotSpeed) - planeY * sin(-rotSpeed);
-    planeY = oldPlaneX * sin(-rotSpeed) + planeY * cos(-rotSpeed);
+  if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
+    Move(moveSpeed, 1);
   }
-  if (IsKeyDown(KEY_LEFT)) {
-    double oldDirX = dirX;
-    dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
-    dirY = oldDirX * sin(rotSpeed) + dirY * cos(rotSpeed);
-
-    double oldPlaneX = planeX;
-    planeX = planeX * cos(rotSpeed) - planeY * sin(rotSpeed);
-    planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
+  if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
+    Move(moveSpeed, -1);
+  }
+  if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
+    Rotate(rotSpeed, -1);
+  }
+  if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
+    Rotate(rotSpeed, 1);
   }
 }
 
@@ -196,26 +201,28 @@ void RenderWalls() {
     // The x coordinate in camera space
     double cameraX = 2 * x / (double)screenWidth - 1;
 
-    double rayDirX = dirX + planeX * cameraX;
-    double rayDirY = dirY + planeY * cameraX;
+    Vector2 rayDir = {
+        .x = dirX + planeX * cameraX,
+        .y = dirY + planeY * cameraX,
+    };
 
     // Which box of the map we are currently in.
     int mapX = (int)posX;
     int mapY = (int)posY;
 
-    // Length of the ray from the current position to the next x-y side
-    Vector2 sideDist;
-
     // Distance from one x-y side to the next x-y side
     Vector2 deltaDist = {
-        .x = (rayDirX == 0) ? INFINITY : fabs(1 / rayDirX),
-        .y = (rayDirY == 0) ? INFINITY : fabs(1 / rayDirY),
+        .x = (rayDir.x == 0) ? INFINITY : fabs(1 / rayDir.x),
+        .y = (rayDir.y == 0) ? INFINITY : fabs(1 / rayDir.y),
     };
+
+    // Length of the ray from the current position to the next x-y side
+    Vector2 sideDist;
 
     // What direction to step in each axis
     Vector2 step;
 
-    if (rayDirX < 0) {
+    if (rayDir.x < 0) {
       step.x = -1;
       sideDist.x = (posX - mapX) * deltaDist.x;
     } else {
@@ -223,7 +230,7 @@ void RenderWalls() {
       sideDist.x = (mapX + 1.0 - posX) * deltaDist.x;
     }
 
-    if (rayDirY < 0) {
+    if (rayDir.y < 0) {
       step.y = -1;
       sideDist.y = (posY - mapY) * deltaDist.y;
     } else {
@@ -232,7 +239,7 @@ void RenderWalls() {
     }
 
     bool hit = false;
-    int side; // North-South or East-West
+    SideHit side;
 
     // Perform DDA
     while (!hit) {
@@ -240,20 +247,20 @@ void RenderWalls() {
       if (sideDist.x < sideDist.y) {
         sideDist.x += deltaDist.x;
         mapX += (int)step.x;
-        side = 0;
+        side = SIDE_NS;
       } else {
         sideDist.y += deltaDist.y;
         mapY += (int)step.y;
-        side = 1;
+        side = SIDE_WE;
       }
 
       hit = (worldMap[mapX][mapY] > 0);
     }
 
     double perpendicularWallDistance;
-    if (side == 0) { // Hit on x axis
+    if (side == SIDE_NS) { // Hit on x axis
       perpendicularWallDistance = (sideDist.x - deltaDist.x);
-    } else { // Hit on Y axis
+    } else {
       perpendicularWallDistance = (sideDist.y - deltaDist.y);
     }
 
@@ -274,14 +281,14 @@ void RenderWalls() {
 
     double wall_x; // Where exactly the wall was hit
     if (side == 0) {
-      wall_x = posY + perpendicularWallDistance * rayDirY;
+      wall_x = posY + perpendicularWallDistance * rayDir.y;
     } else {
-      wall_x = posX + perpendicularWallDistance * rayDirX;
+      wall_x = posX + perpendicularWallDistance * rayDir.x;
     }
     wall_x -= floor(wall_x);
 
     int tex_x = (int)(wall_x * (double)(texWidth));
-    if ((side == 0 && rayDirX > 0) || (side == 1 && rayDirY < 0)) {
+    if ((side == 0 && rayDir.x > 0) || (side == 1 && rayDir.y < 0)) {
       tex_x = texWidth - tex_x - 1;
     }
 
