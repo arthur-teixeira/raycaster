@@ -360,21 +360,21 @@ void RenderWalls() {
 }
 
 int partition(int *order, double *dist, int p, int r) {
-  int x = order[p];
+  double x = dist[p];
   int i = p - 1;
   int j = r + 1;
 
   while (true) {
     while (true) {
       j -= 1;
-      if (order[j] <= x) {
+      if (dist[j] <= x) {
         break;
       }
     }
 
     while (true) {
       i += 1;
-      if (order[i] >= x) {
+      if (dist[i] >= x) {
         break;
       }
     }
@@ -403,6 +403,16 @@ void quicksort(int *order, double *dist, int p, int r) {
 
 void sortSprites(int *order, double *dist, int amount) {
   quicksort(order, dist, 0, amount - 1);
+
+  for (int i = 0; i < amount / 2; i++) {
+    int order_temp = order[i];
+    order[i] = order[amount - i - 1];
+    order[amount - i - 1] = order_temp;
+
+    double dist_temp = dist[i];
+    dist[i] = dist[amount - i - 1];
+    dist[amount - i - 1] = dist_temp;
+  }
 }
 
 Texture2D LoadInitialFrame() {
@@ -435,9 +445,8 @@ int main(void) {
       spriteOrder[i] = i;
       double xComponent = posX - sprites[i].x;
       double yComponent = posY - sprites[i].y;
-      spriteDistance[i] = (xComponent * xComponent + yComponent * yComponent);
+      spriteDistance[i] = (xComponent * xComponent) + (yComponent * yComponent);
     }
-
     sortSprites(spriteOrder, spriteDistance, numSprites);
 
     for (int i = 0; i < numSprites; i++) {
@@ -463,7 +472,7 @@ int main(void) {
           (int)((screenWidth / 2) * (1 + transform.x / transform.y));
 
       // Using the y component of the transformed vector prevents fisheye
-      int spriteHeight = (int)fabs(screenHeight / transform.y);
+      int spriteHeight = (int)floor(fabs(screenHeight / transform.y));
 
       // Calculate lowest and highest pixels
       int drawStartY = -spriteHeight / 2 + screenHeight / 2;
@@ -477,7 +486,6 @@ int main(void) {
 
       // Calculate sprite width
       int spriteWidth = spriteHeight;
-
       int drawStartX = -spriteWidth / 2 + spriteScreenX;
 
       if (drawStartX < 0) {
@@ -504,12 +512,12 @@ int main(void) {
 
           for (int y = drawStartY; y < drawEndY; y++) {
             // 256 and 128 factors to avoid floats
-            int d = y * 256 - screenHeight * 128 + spriteHeight / 128;
+            int d = y * 256 - screenHeight * 128 + spriteHeight * 128;
             int texY = (d * texHeight) / (spriteHeight * 256);
             Color color = image_textures[sprites[spriteOrder[i]].texture]
                                         [texWidth * texY + texX];
-            screen_buffer[y * screenWidth + stripe] = color;
             if (color.r > 0 || color.g > 0 || color.b > 0) {
+              screen_buffer[y * screenWidth + stripe] = color;
             }
           }
         }
