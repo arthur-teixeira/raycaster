@@ -7,6 +7,7 @@
 #define LIMIT_FPS 1
 #define FULLSCREEN 0
 #define DEBUG 1
+#define MUTED 1
 
 #if FULLSCREEN
 #define screenWidth 1920
@@ -24,16 +25,16 @@
 #define ARRAY_LEN(xs) sizeof(xs) / sizeof(xs[0])
 
 typedef enum {
-  SIDE_NS,
   SIDE_WE,
+  SIDE_NS,
 } SideHit;
 
 int worldMap[mapWidth][mapHeight] = {
     {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 4, 4, 6, 4, 4, 6, 4, 6, 4, 4, 4, 6, 4},
     {8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},
-    {8, 0, 3, 3, 0, 0, 0, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
-    {8, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
-    {8, 0, 3, 3, 0, 0, 0, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},
+    {8, 0, 0, 0, 1, 3, 2, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
+    {8, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
+    {8, 0, 0, 0, 2, 0, 0, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},
     {8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 4, 0, 0, 0, 0, 0, 6, 6, 6, 0, 6, 4, 6},
     {8, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 6, 0, 0, 0, 0, 0, 6},
     {7, 7, 7, 7, 0, 7, 7, 7, 7, 0, 8, 0, 8, 0, 8, 0, 8, 4, 0, 4, 0, 6, 0, 6},
@@ -107,7 +108,7 @@ char *images[] = {
 
 Color *image_textures[ARRAY_LEN(images)];
 
-double posX = 22.0, posY = 11.5;
+double posX = 1.6, posY = 1.5;
 double dirX = -1, dirY = 0;
 double planeX = 0, planeY = 0.66f;
 
@@ -158,7 +159,7 @@ void Rotate(double rotSpeed, signed char factor) {
 
 void UpdatePosition(float frameTime) {
   double moveSpeed = frameTime * 2.0f;
-  double rotSpeed = frameTime;
+  double rotSpeed = frameTime * 2.0f;
 
   if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
     Move(moveSpeed, 1);
@@ -282,6 +283,12 @@ void RenderWalls() {
 
     bool hit = false;
     SideHit side;
+    int tile;
+
+    Vector2 wallOffset = {
+        .x = 0,
+        .y = 0,
+    };
 
     // Perform DDA
     while (!hit) {
@@ -289,21 +296,49 @@ void RenderWalls() {
       if (sideDist.x < sideDist.y) {
         sideDist.x += deltaDist.x;
         mapX += (int)step.x;
-        side = SIDE_NS;
+        side = SIDE_WE;
       } else {
         sideDist.y += deltaDist.y;
         mapY += (int)step.y;
-        side = SIDE_WE;
+        side = SIDE_NS;
+      }
+      tile = worldMap[mapX][mapY];
+
+      // https://github.com/almushel/raycast-demo
+      if (tile == 3) { // door
+        hit = true;
+        if (side == SIDE_NS) {
+          // Offsetting the wall to the middle of the tile
+          wallOffset.y = 0.5 * step.y;
+
+          // If ray hits adjacent wall
+          if (sideDist.y - (deltaDist.y / 2) >= sideDist.x) {
+            mapX += step.x;
+            tile = worldMap[mapX][mapY]; // Draw adjacent tile instead
+            side = SIDE_NS;
+            wallOffset.y = 0;
+          }
+        } else { // SIDE_WE
+          wallOffset.x = 0.5 * step.x;
+          if (sideDist.x - (deltaDist.x / 2) >= sideDist.y) {
+            mapY += step.y;
+            side = SIDE_WE;
+            tile = worldMap[mapX][mapY];
+            wallOffset.x = 0;
+          }
+        }
       }
 
-      hit = (worldMap[mapX][mapY] > 0);
+      hit = tile > 0;
     }
 
     double perpendicularWallDistance;
-    if (side == SIDE_NS) { // Hit on x axis
-      perpendicularWallDistance = (sideDist.x - deltaDist.x);
+    if (side == SIDE_WE) {
+      perpendicularWallDistance =
+          (mapX - posX + wallOffset.x + (1 - step.x) / 2) / rayDir.x;
     } else {
-      perpendicularWallDistance = (sideDist.y - deltaDist.y);
+      perpendicularWallDistance =
+          (mapY - posY + wallOffset.y + (1 - step.y) / 2) / rayDir.y;
     }
 
     // Height of line to draw on the screen
@@ -318,7 +353,7 @@ void RenderWalls() {
       drawEnd = screenHeight - 1;
 
     // -1 so that texture 0 can be used
-    int texture_num = worldMap[mapX][mapY] - 1;
+    int texture_num = tile - 1;
     Color *tex = image_textures[texture_num];
 
     double wall_x; // Where exactly the wall was hit
@@ -523,11 +558,15 @@ int main(void) {
 
   Texture2D frame = LoadInitialFrame();
 
+#if !MUTED
   Music soundtrack = LoadMusicStream("./assets/soundtrack/ost.wav");
   PlayMusicStream(soundtrack);
+#endif
 
   while (!WindowShouldClose()) {
+#if !MUTED
     UpdateMusicStream(soundtrack);
+#endif
     BeginDrawing();
     ClearBackground(BLANK);
 
@@ -550,7 +589,9 @@ int main(void) {
 
   UnloadColors();
   UnloadTexture(frame);
+#if !MUTED
   UnloadMusicStream(soundtrack);
+#endif
 
   CloseAudioDevice();
   CloseWindow();
