@@ -24,6 +24,9 @@
 
 #define ARRAY_LEN(xs) sizeof(xs) / sizeof(xs[0])
 
+#define DOOR 12
+#define DOOR_FRAME 13
+
 typedef enum {
   SIDE_WE,
   SIDE_NS,
@@ -32,8 +35,8 @@ typedef enum {
 int worldMap[mapWidth][mapHeight] = {
     {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 4, 4, 6, 4, 4, 6, 4, 6, 4, 4, 4, 6, 4},
     {8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},
-    {8, 0, 0, 0, 1, 3, 2, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
-    {8, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
+    {8, 0, 0, 0, 1, 12, 2, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
+    {8, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
     {8, 0, 0, 0, 2, 0, 0, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},
     {8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 4, 0, 0, 0, 0, 0, 6, 6, 6, 0, 6, 4, 6},
     {8, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 6, 0, 0, 0, 0, 0, 6},
@@ -103,7 +106,8 @@ char *images[] = {
     "./assets/bluestone.png",   "./assets/mossy.png",
     "./assets/wood.png",        "./assets/colorstone.png",
     "./assets/barrel.png",      "./assets/pillar.png",
-    "./assets/greenlight.png",
+    "./assets/greenlight.png",  "./assets/door.png",
+    "./assets/doorframe.png",
 };
 
 Color *image_textures[ARRAY_LEN(images)];
@@ -305,25 +309,23 @@ void RenderWalls() {
       tile = worldMap[mapX][mapY];
 
       // https://github.com/almushel/raycast-demo
-      if (tile == 3) { // door
-        hit = true;
+      if (tile == DOOR) {
         if (side == SIDE_NS) {
           // Offsetting the wall to the middle of the tile
           wallOffset.y = 0.5 * step.y;
-
           // If ray hits adjacent wall
           if (sideDist.y - (deltaDist.y / 2) >= sideDist.x) {
             mapX += step.x;
-            tile = worldMap[mapX][mapY]; // Draw adjacent tile instead
-            side = SIDE_NS;
+            tile = DOOR_FRAME;
+            side = SIDE_WE;
             wallOffset.y = 0;
           }
-        } else { // SIDE_WE
+        } else {
           wallOffset.x = 0.5 * step.x;
           if (sideDist.x - (deltaDist.x / 2) >= sideDist.y) {
             mapY += step.y;
-            side = SIDE_WE;
-            tile = worldMap[mapX][mapY];
+            side = SIDE_NS;
+            tile = DOOR_FRAME;
             wallOffset.x = 0;
           }
         }
@@ -333,7 +335,7 @@ void RenderWalls() {
     }
 
     double perpendicularWallDistance;
-    if (side == SIDE_WE) {
+    if (side == SIDE_WE) { // Hit on x axis
       perpendicularWallDistance =
           (mapX - posX + wallOffset.x + (1 - step.x) / 2) / rayDir.x;
     } else {
@@ -365,8 +367,12 @@ void RenderWalls() {
     wall_x -= floor(wall_x);
 
     int tex_x = (int)(wall_x * (double)(texWidth));
-    if ((side == 0 && rayDir.x > 0) || (side == 1 && rayDir.y < 0)) {
-      tex_x = texWidth - tex_x - 1;
+
+    if ((side == 0 && rayDir.x < 0) || (side == 1 && rayDir.y < 0)) {
+      // Not inverting the door so the handle is always on the same side
+      if (tile != DOOR) {
+        tex_x = texWidth - tex_x - 1;
+      }
     }
 
     // How much to increase texture coordinate per screen pixel
