@@ -204,17 +204,17 @@ void UpdatePosition(float frameTime) {
   }
 }
 
-void MoveDoor(int x, int y) {
+void OpenDoor(int x, int y) {
   DoorInfo door = doors[x][y];
 
   switch (door.state) {
   case DOOR_CLOSED:
     PlaySound(door_sfx);
-    doors[x][y].state = DOOR_OPEN;
+    doors[x][y].state = DOOR_OPENING;
     break;
   case DOOR_OPEN:
     PlaySound(door_sfx);
-    doors[x][y].state = DOOR_CLOSED;
+    doors[x][y].state = DOOR_CLOSING;
     break;
   default:
     break;
@@ -229,9 +229,9 @@ void Interact(float frameTime) {
     int tileY = worldMap[(int)posX][(int)(posY + (dirY * moveSpeed))];
 
     if (tileX == DOOR) {
-      MoveDoor(posX + (dirX * moveSpeed), posY);
+      OpenDoor(posX + (dirX * moveSpeed), posY);
     } else if (tileY == DOOR) {
-      MoveDoor(posX, posY + (dirY * moveSpeed));
+      OpenDoor(posX, posY + (dirY * moveSpeed));
     }
   }
 }
@@ -244,6 +244,30 @@ void InitializeDoors() {
             .state = DOOR_CLOSED,
             .timer = 0,
         };
+      }
+    }
+  }
+}
+
+void MoveDoors(float frameTime) {
+  for (int y = 0; y < mapWidth; y++) {
+    for (int x = 0; x < mapHeight; x++) {
+      if (worldMap[x][y] == DOOR) {
+        DoorInfo door = doors[x][y];
+
+        if (door.state == DOOR_OPENING) { // Timer goes from 0 to 1.
+          doors[x][y].timer += frameTime;
+          if (doors[x][y].timer >= 1) {
+            doors[x][y].state = DOOR_OPEN;
+            doors[x][y].timer = 1;
+          }
+        } else if (door.state == DOOR_CLOSING) { // Timer goes from 1 to 0.
+          doors[x][y].timer -= frameTime;
+          if (doors[x][y].timer <= 0) {
+            doors[x][y].state = DOOR_CLOSED;
+            doors[x][y].timer = 0;
+          }
+        }
       }
     }
   }
@@ -364,6 +388,9 @@ void RenderWalls() {
         .y = 0,
     };
 
+    double perpendicularWallDistance;
+    double wall_x; // Where exactly the wall was hit
+
     // Perform DDA
     while (!hit) {
       // Jump to next square, either in the x or y direction
@@ -397,20 +424,43 @@ void RenderWalls() {
         if (side == SIDE_NS) {
           // Offsetting the wall to the middle of the tile
           wallOffset.y = 0.5 * step.y;
+
+          perpendicularWallDistance =
+              (mapY - posY + wallOffset.y + (1 - step.y) / 2) / rayDir.y;
+
+          wall_x = posX + perpendicularWallDistance * rayDir.x;
+          wall_x -= floor(wall_x);
+
           // If ray hits adjacent wall
           if (sideDist.y - (deltaDist.y / 2) >= sideDist.x) {
             mapX += step.x;
             tile = DOOR_FRAME;
             side = SIDE_WE;
             wallOffset.y = 0;
+          } else {
+            if (1.0 - wall_x <= doors[mapX][mapY].timer) {
+              hit = false;
+              wallOffset.y = 0;
+            }
           }
         } else {
           wallOffset.x = 0.5 * step.x;
+          perpendicularWallDistance =
+              (mapX - posX + wallOffset.x + (1 - step.x) / 2) / rayDir.x;
+
+          wall_x = posY + perpendicularWallDistance * rayDir.y;
+          wall_x -= floor(wall_x);
+
           if (sideDist.x - (deltaDist.x / 2) >= sideDist.y) {
             mapY += step.y;
             side = SIDE_NS;
             tile = DOOR_FRAME;
             wallOffset.x = 0;
+          } else {
+            if (1.0 - wall_x <= doors[mapX][mapY].timer) {
+              hit = false;
+              wallOffset.x = 0;
+            }
           }
         }
       } else {
@@ -423,7 +473,6 @@ void RenderWalls() {
       }
     }
 
-    double perpendicularWallDistance;
     if (side == SIDE_WE) { // Hit on x axis
       perpendicularWallDistance =
           (mapX - posX + wallOffset.x + (1 - step.x) / 2) / rayDir.x;
@@ -447,13 +496,16 @@ void RenderWalls() {
     int texture_num = tile - 1;
     Color *tex = image_textures[texture_num];
 
-    double wall_x; // Where exactly the wall was hit
-    if (side == 0) {
+    if (side == SIDE_WE) {
       wall_x = posY + perpendicularWallDistance * rayDir.y;
     } else {
       wall_x = posX + perpendicularWallDistance * rayDir.x;
     }
     wall_x -= floor(wall_x);
+
+    if (tile == DOOR) {
+      wall_x += doors[mapX][mapY].timer;
+    }
 
     int tex_x = (int)(wall_x * (double)(texWidth));
 
@@ -684,6 +736,7 @@ int main(void) {
 
     UpdatePosition(frameTime);
     Interact(frameTime);
+    MoveDoors(frameTime);
   }
 
   UnloadColors();
