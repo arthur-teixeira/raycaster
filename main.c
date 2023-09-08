@@ -4,152 +4,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#define LIMIT_FPS 1
-#define FULLSCREEN 0
-#define DEBUG 1
-#define MUTED 1
+#include "game.h"
 
-#if FULLSCREEN
-#define screenWidth 1920
-#define screenHeight 1080
-#else
-#define screenWidth 640
-#define screenHeight 480
-#endif
-
-#define texWidth 64
-#define texHeight 64
-#define mapWidth 24
-#define mapHeight 24
-
-#define ARRAY_LEN(xs) sizeof(xs) / sizeof(xs[0])
-
-#define DOOR 12
-#define DOOR_FRAME 13
-
-typedef enum {
-  SIDE_WE,
-  SIDE_NS,
-} SideHit;
-
-int worldMap[mapWidth][mapHeight] = {
-    {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 4, 4, 6, 4, 4, 6, 4, 6, 4, 4, 4, 6, 4},
-    {8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},
-    {8, 0, 0, 0, 1, 12, 2, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
-    {8, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6},
-    {8, 0, 0, 0, 2, 0, 0, 0, 0, 8, 8, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4},
-    {8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 4, 0, 0, 0, 0, 0, 6, 6, 6, 0, 6, 4, 6},
-    {8, 8, 8, 8, 0, 8, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 6, 0, 0, 0, 0, 0, 6},
-    {7, 7, 7, 7, 0, 7, 7, 7, 7, 0, 8, 0, 8, 0, 8, 0, 8, 4, 0, 4, 0, 6, 0, 6},
-    {7, 7, 0, 0, 0, 0, 0, 0, 7, 8, 0, 8, 0, 8, 0, 8, 8, 6, 0, 0, 0, 0, 0, 6},
-    {7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 6, 0, 0, 0, 0, 0, 4},
-    {7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 6, 0, 6, 0, 6, 0, 6},
-    {7, 7, 0, 0, 0, 0, 0, 0, 7, 8, 0, 8, 0, 8, 0, 8, 8, 6, 4, 6, 0, 6, 6, 6},
-    {7, 7, 7, 7, 0, 7, 7, 7, 7, 8, 8, 4, 0, 6, 8, 4, 8, 3, 3, 3, 0, 3, 3, 3},
-    {2, 2, 2, 2, 0, 2, 2, 2, 2, 4, 6, 4, 0, 0, 6, 0, 6, 3, 0, 0, 0, 0, 0, 3},
-    {2, 2, 0, 0, 0, 0, 0, 2, 2, 4, 0, 0, 0, 0, 0, 0, 4, 3, 0, 0, 0, 0, 0, 3},
-    {2, 0, 0, 0, 0, 0, 0, 0, 2, 4, 0, 0, 0, 0, 0, 0, 4, 3, 0, 0, 0, 0, 0, 3},
-    {1, 0, 0, 0, 0, 0, 0, 0, 1, 4, 4, 4, 4, 4, 6, 0, 6, 3, 3, 0, 0, 0, 3, 3},
-    {2, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 1, 2, 2, 2, 6, 6, 0, 0, 5, 0, 5, 0, 5},
-    {2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 2, 2, 0, 5, 0, 5, 0, 0, 0, 5, 5},
-    {2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 5, 0, 5, 0, 5, 0, 5, 0, 5},
-    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5},
-    {2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 5, 0, 5, 0, 5, 0, 5, 0, 5},
-    {2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 2, 2, 0, 5, 0, 5, 0, 0, 0, 5, 5},
-    {2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5},
-};
-
-typedef enum {
-  DOOR_CLOSED,
-  DOOR_OPENING,
-  DOOR_OPEN,
-  DOOR_CLOSING,
-} DoorState;
-
-typedef struct {
-  DoorState state;
-  double timer;
-} DoorInfo;
-
-DoorInfo doors[mapWidth][mapHeight];
-
-typedef struct {
-  double x;
-  double y;
-  int texture;
-} Sprite;
-
-#define numSprites 19
-
-Sprite sprites[numSprites] = {
-    {20.5, 11.5, 10}, // green light in front of playerstart
-    // green lights in every room
-    {18.5, 4.5, 10},
-    {10.0, 4.5, 10},
-    {10.0, 12.5, 10},
-    {3.5, 6.5, 10},
-    {3.5, 20.5, 10},
-    {3.5, 14.5, 10},
-    {14.5, 20.5, 10},
-
-    // row of pillars in front of wall: fisheye test
-    {18.5, 10.5, 9},
-    {18.5, 11.5, 9},
-    {18.5, 12.5, 9},
-
-    // some barrels around the map
-    {21.5, 1.5, 8},
-    {15.5, 1.5, 8},
-    {16.0, 1.8, 8},
-    {16.2, 1.2, 8},
-    {3.5, 2.5, 8},
-    {9.5, 15.5, 8},
-    {10.0, 15.1, 8},
-    {10.5, 15.8, 8},
-};
-
-Color screen_buffer[screenHeight * screenWidth];
-double ZBuffer[screenWidth];
-
-int spriteOrder[numSprites] = {0};
-double spriteDistance[numSprites] = {0.0};
-
-char *images[] = {
-    "./assets/eagle.png",       "./assets/redbrick.png",
-    "./assets/purplestone.png", "./assets/greystone.png",
-    "./assets/bluestone.png",   "./assets/mossy.png",
-    "./assets/wood.png",        "./assets/colorstone.png",
-    "./assets/barrel.png",      "./assets/pillar.png",
-    "./assets/greenlight.png",  "./assets/door.png",
-    "./assets/doorframe.png",
-};
-
-Color *image_textures[ARRAY_LEN(images)];
-
-Sound door_sfx;
-
-double posX = 1.6, posY = 1.5;
-double dirX = -1, dirY = 0;
-double planeX = 0, planeY = 0.66f;
 
 // https://www.reddit.com/r/raylib/comments/hcglzh/comment/g212jbl/?utm_source=share&utm_medium=web2x&context=3
 void DrawFrame(Texture2D frame_tex) {
-  UpdateTexture(frame_tex, screen_buffer);
+  UpdateTexture(frame_tex, game.screen_buffer);
   DrawTexture(frame_tex, 0, 0, WHITE);
-}
-
-void LoadImageTextures() {
-  for (size_t i = 0; i < ARRAY_LEN(images); i++) {
-    Image img = LoadImage(images[i]);
-    image_textures[i] = LoadImageColors(img);
-    UnloadImage(img);
-  }
-}
-
-void UnloadColors() {
-  for (size_t i = 0; i < ARRAY_LEN(image_textures); i++) {
-    UnloadImageColors(image_textures[i]);
-  }
 }
 
 void DrawFrameCounter(float frameTime) {
@@ -161,7 +22,8 @@ void Move(double moveSpeed, signed char factor) {
   int y = posY;
   int curTile = worldMap[x][y];
 
-  if (curTile == 0 || (curTile == DOOR && doors[x][y].state == DOOR_OPEN)) {
+  if (curTile == 0 ||
+      (curTile == DOOR && game.doors[x][y].state == DOOR_OPEN)) {
     posX += factor * dirX * moveSpeed;
   }
 
@@ -169,7 +31,8 @@ void Move(double moveSpeed, signed char factor) {
   y = posY + (factor * dirY * moveSpeed);
   curTile = worldMap[x][y];
 
-  if (curTile == 0 || (curTile == DOOR && doors[x][y].state == DOOR_OPEN)) {
+  if (curTile == 0 ||
+      (curTile == DOOR && game.doors[x][y].state == DOOR_OPEN)) {
     posY += factor * dirY * moveSpeed;
   }
 }
@@ -205,16 +68,17 @@ void UpdatePosition(float frameTime) {
 }
 
 void OpenDoor(int x, int y) {
-  DoorInfo door = doors[x][y];
+  DoorInfo door = game.doors[x][y];
 
+  // TODO: Don't close the door if the player is on the tile
   switch (door.state) {
   case DOOR_CLOSED:
-    PlaySound(door_sfx);
-    doors[x][y].state = DOOR_OPENING;
+    PlaySound(game.door_sfx);
+    game.doors[x][y].state = DOOR_OPENING;
     break;
   case DOOR_OPEN:
-    PlaySound(door_sfx);
-    doors[x][y].state = DOOR_CLOSING;
+    PlaySound(game.door_sfx);
+    game.doors[x][y].state = DOOR_CLOSING;
     break;
   default:
     break;
@@ -224,6 +88,7 @@ void OpenDoor(int x, int y) {
 void Interact(float frameTime) {
   double moveSpeed = frameTime * 2.0f;
 
+  // TODO: open door from 2 tiles away
   if (IsKeyPressed(KEY_SPACE)) {
     int tileX = worldMap[(int)(posX + (dirX * moveSpeed))][(int)posY];
     int tileY = worldMap[(int)posX][(int)(posY + (dirY * moveSpeed))];
@@ -236,36 +101,23 @@ void Interact(float frameTime) {
   }
 }
 
-void InitializeDoors() {
-  for (int y = 0; y < mapWidth; y++) {
-    for (int x = 0; x < mapHeight; x++) {
-      if (worldMap[x][y] == DOOR) {
-        doors[x][y] = (DoorInfo){
-            .state = DOOR_CLOSED,
-            .timer = 0,
-        };
-      }
-    }
-  }
-}
-
 void MoveDoors(float frameTime) {
   for (int y = 0; y < mapWidth; y++) {
     for (int x = 0; x < mapHeight; x++) {
       if (worldMap[x][y] == DOOR) {
-        DoorInfo door = doors[x][y];
+        DoorInfo door = game.doors[x][y];
 
         if (door.state == DOOR_OPENING) { // Timer goes from 0 to 1.
-          doors[x][y].timer += frameTime;
-          if (doors[x][y].timer >= 1) {
-            doors[x][y].state = DOOR_OPEN;
-            doors[x][y].timer = 1;
+          game.doors[x][y].timer += frameTime;
+          if (game.doors[x][y].timer >= 1) {
+            game.doors[x][y].state = DOOR_OPEN;
+            game.doors[x][y].timer = 1;
           }
         } else if (door.state == DOOR_CLOSING) { // Timer goes from 1 to 0.
-          doors[x][y].timer -= frameTime;
-          if (doors[x][y].timer <= 0) {
-            doors[x][y].state = DOOR_CLOSED;
-            doors[x][y].timer = 0;
+          game.doors[x][y].timer -= frameTime;
+          if (game.doors[x][y].timer <= 0) {
+            game.doors[x][y].state = DOOR_CLOSED;
+            game.doors[x][y].timer = 0;
           }
         }
       }
@@ -325,14 +177,14 @@ void RenderFloorAndCeiling() {
 
       Color color;
       // floor
-      color = image_textures[floorTexture][texWidth * ty + tx];
+      color = game.image_textures[floorTexture][texWidth * ty + tx];
       color.a /= 2;
-      screen_buffer[y * screenWidth + x] = color;
+      game.screen_buffer[y * screenWidth + x] = color;
 
       // Ceiling
-      color = image_textures[ceilTexture][texWidth * ty + tx];
+      color = game.image_textures[ceilTexture][texWidth * ty + tx];
       color.a /= 2;
-      screen_buffer[(screenHeight - y - 1) * screenWidth + x] = color;
+      game.screen_buffer[(screenHeight - y - 1) * screenWidth + x] = color;
     }
   }
 }
@@ -414,7 +266,7 @@ void RenderWalls() {
 
       // https://github.com/almushel/raycast-demo
       if (tile == DOOR) {
-        DoorInfo door = doors[mapX][mapY];
+        DoorInfo door = game.doors[mapX][mapY];
 
         if (door.state == DOOR_OPEN) {
           hit = false;
@@ -438,7 +290,7 @@ void RenderWalls() {
             side = SIDE_WE;
             wallOffset.y = 0;
           } else {
-            if (1.0 - wall_x <= doors[mapX][mapY].timer) {
+            if (1.0 - wall_x <= game.doors[mapX][mapY].timer) {
               hit = false;
               wallOffset.y = 0;
             }
@@ -457,7 +309,7 @@ void RenderWalls() {
             tile = DOOR_FRAME;
             wallOffset.x = 0;
           } else {
-            if (1.0 - wall_x <= doors[mapX][mapY].timer) {
+            if (1.0 - wall_x <= game.doors[mapX][mapY].timer) {
               hit = false;
               wallOffset.x = 0;
             }
@@ -494,7 +346,7 @@ void RenderWalls() {
 
     // -1 so that texture 0 can be used
     int texture_num = tile - 1;
-    Color *tex = image_textures[texture_num];
+    Color *tex = game.image_textures[texture_num];
 
     if (side == SIDE_WE) {
       wall_x = posY + perpendicularWallDistance * rayDir.y;
@@ -504,7 +356,7 @@ void RenderWalls() {
     wall_x -= floor(wall_x);
 
     if (tile == DOOR) {
-      wall_x += doors[mapX][mapY].timer;
+      wall_x += game.doors[mapX][mapY].timer;
     }
 
     int tex_x = (int)(wall_x * (double)(texWidth));
@@ -534,11 +386,11 @@ void RenderWalls() {
         color.a /= 2;
       }
 
-      screen_buffer[y * screenWidth + x] = color;
+      game.screen_buffer[y * screenWidth + x] = color;
     }
 
     // ZBuffer used for sprites
-    ZBuffer[x] = perpendicularWallDistance;
+    game.ZBuffer[x] = perpendicularWallDistance;
   }
 }
 
@@ -600,18 +452,18 @@ void sortSprites(int *order, double *dist, int amount) {
 
 void RenderSprites() {
   for (int i = 0; i < numSprites; i++) {
-    spriteOrder[i] = i;
+    game.spriteOrder[i] = i;
     double xComponent = posX - sprites[i].x;
     double yComponent = posY - sprites[i].y;
-    spriteDistance[i] = (xComponent * xComponent) + (yComponent * yComponent);
+    game.spriteDistance[i] = (xComponent * xComponent) + (yComponent * yComponent);
   }
-  sortSprites(spriteOrder, spriteDistance, numSprites);
+  sortSprites(game.spriteOrder, game.spriteDistance, numSprites);
 
   for (int i = 0; i < numSprites; i++) {
     // Translate position to relative to camera
     Vector2 sprite = {
-        .x = sprites[spriteOrder[i]].x - posX,
-        .y = sprites[spriteOrder[i]].y - posY,
+        .x = sprites[game.spriteOrder[i]].x - posX,
+        .y = sprites[game.spriteOrder[i]].y - posY,
     };
 
     // Transform sprite with the inverse camera matrix
@@ -666,16 +518,16 @@ void RenderSprites() {
       // 3) it is on the screen (right)
       // 4) ZBuffer with perpendicular distance
       if ((transform.y > 0) && (stripe > 0) && (stripe < screenWidth) &&
-          (transform.y < ZBuffer[stripe])) {
+          (transform.y < game.ZBuffer[stripe])) {
 
         for (int y = drawStartY; y < drawEndY; y++) {
           // 256 and 128 factors to avoid floats
           int d = y * 256 - screenHeight * 128 + spriteHeight * 128;
           int texY = (d * texHeight) / (spriteHeight * 256);
-          Color color = image_textures[sprites[spriteOrder[i]].texture]
+          Color color = game.image_textures[sprites[game.spriteOrder[i]].texture]
                                       [texWidth * texY + texX];
           if (color.r > 0 || color.g > 0 || color.b > 0) {
-            screen_buffer[y * screenWidth + stripe] = color;
+            game.screen_buffer[y * screenWidth + stripe] = color;
           }
         }
       }
@@ -685,7 +537,7 @@ void RenderSprites() {
 
 Texture2D LoadInitialFrame() {
   Image initial_frame = {
-      .data = screen_buffer,
+      .data = game.screen_buffer,
       .width = screenWidth,
       .height = screenHeight,
       .mipmaps = 1,
@@ -700,23 +552,15 @@ int main(void) {
 #if LIMIT_FPS
   SetTargetFPS(60);
 #endif
-
-  LoadImageTextures();
+  InitGame();
 
   Texture2D frame = LoadInitialFrame();
 
-#if !MUTED
-  Music soundtrack = LoadMusicStream("./assets/soundtrack/ost.wav");
-  PlayMusicStream(soundtrack);
-#endif
-
-  door_sfx = LoadSound("./assets/sound-effects/Door.wav");
-  InitializeDoors();
-
   while (!WindowShouldClose()) {
 #if !MUTED
-    UpdateMusicStream(soundtrack);
+    UpdateMusicStream(game.soundtrack);
 #endif
+
     BeginDrawing();
     ClearBackground(BLANK);
 
@@ -739,13 +583,7 @@ int main(void) {
     MoveDoors(frameTime);
   }
 
-  UnloadColors();
   UnloadTexture(frame);
-#if !MUTED
-  UnloadMusicStream(soundtrack);
-#endif
-
-  UnloadSound(door_sfx);
 
   CloseAudioDevice();
   CloseWindow();

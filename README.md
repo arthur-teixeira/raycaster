@@ -25,3 +25,7 @@ $ ./bin/raycaster
 ## To-do list
 - [ ] Find a way to invert the frame buffer matrix, so that we process lines horizontally
 - [X] Try to render whole texture at once?
+- [X] Render thin walls
+- [ ] Doors
+- [ ] Weapon
+- [ ] Enemies

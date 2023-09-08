@@ -7,4 +7,4 @@ LIBS="`pkg-config --libs raylib` -lm"
 
 mkdir -p ./bin/
 
-clang $CFLAGS -o ./bin/raycaster  ./main.c $LIBS -L./bin/
+clang $CFLAGS -o ./bin/raycaster  ./*.c $LIBS -L./bin/
