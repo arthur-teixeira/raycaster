@@ -59,6 +59,20 @@ int worldMap[mapWidth][mapHeight] = {
     {2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5},
 };
 
+typedef enum {
+  DOOR_CLOSED,
+  DOOR_OPENING,
+  DOOR_OPEN,
+  DOOR_CLOSING,
+} DoorState;
+
+typedef struct {
+  DoorState state;
+  double timer;
+} DoorInfo;
+
+DoorInfo doors[mapWidth][mapHeight];
+
 typedef struct {
   double x;
   double y;
@@ -112,6 +126,8 @@ char *images[] = {
 
 Color *image_textures[ARRAY_LEN(images)];
 
+Sound door_sfx;
+
 double posX = 1.6, posY = 1.5;
 double dirX = -1, dirY = 0;
 double planeX = 0, planeY = 0.66f;
@@ -141,10 +157,19 @@ void DrawFrameCounter(float frameTime) {
 }
 
 void Move(double moveSpeed, signed char factor) {
-  if (worldMap[(int)(posX + (factor * dirX * moveSpeed))][(int)posY] == 0) {
+  int x = posX + (factor * dirX * moveSpeed);
+  int y = posY;
+  int curTile = worldMap[x][y];
+
+  if (curTile == 0 || (curTile == DOOR && doors[x][y].state == DOOR_OPEN)) {
     posX += factor * dirX * moveSpeed;
   }
-  if (worldMap[(int)posX][(int)(posY + (factor * dirY * moveSpeed))] == 0) {
+
+  x = posX;
+  y = posY + (factor * dirY * moveSpeed);
+  curTile = worldMap[x][y];
+
+  if (curTile == 0 || (curTile == DOOR && doors[x][y].state == DOOR_OPEN)) {
     posY += factor * dirY * moveSpeed;
   }
 }
@@ -176,6 +201,51 @@ void UpdatePosition(float frameTime) {
   }
   if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
     Rotate(rotSpeed, 1);
+  }
+}
+
+void MoveDoor(int x, int y) {
+  DoorInfo door = doors[x][y];
+
+  switch (door.state) {
+  case DOOR_CLOSED:
+    PlaySound(door_sfx);
+    doors[x][y].state = DOOR_OPEN;
+    break;
+  case DOOR_OPEN:
+    PlaySound(door_sfx);
+    doors[x][y].state = DOOR_CLOSED;
+    break;
+  default:
+    break;
+  }
+}
+
+void Interact(float frameTime) {
+  double moveSpeed = frameTime * 2.0f;
+
+  if (IsKeyPressed(KEY_SPACE)) {
+    int tileX = worldMap[(int)(posX + (dirX * moveSpeed))][(int)posY];
+    int tileY = worldMap[(int)posX][(int)(posY + (dirY * moveSpeed))];
+
+    if (tileX == DOOR) {
+      MoveDoor(posX + (dirX * moveSpeed), posY);
+    } else if (tileY == DOOR) {
+      MoveDoor(posX, posY + (dirY * moveSpeed));
+    }
+  }
+}
+
+void InitializeDoors() {
+  for (int y = 0; y < mapWidth; y++) {
+    for (int x = 0; x < mapHeight; x++) {
+      if (worldMap[x][y] == DOOR) {
+        doors[x][y] = (DoorInfo){
+            .state = DOOR_CLOSED,
+            .timer = 0,
+        };
+      }
+    }
   }
 }
 
@@ -308,8 +378,22 @@ void RenderWalls() {
       }
       tile = worldMap[mapX][mapY];
 
+      if (tile == 0) {
+        hit = false;
+        continue;
+      }
+
+      hit = true;
+
       // https://github.com/almushel/raycast-demo
       if (tile == DOOR) {
+        DoorInfo door = doors[mapX][mapY];
+
+        if (door.state == DOOR_OPEN) {
+          hit = false;
+          continue;
+        }
+
         if (side == SIDE_NS) {
           // Offsetting the wall to the middle of the tile
           wallOffset.y = 0.5 * step.y;
@@ -329,9 +413,14 @@ void RenderWalls() {
             wallOffset.x = 0;
           }
         }
+      } else {
+        if (side == SIDE_NS && worldMap[mapX][(int)(mapY - step.y)] == DOOR) {
+          tile = DOOR_FRAME;
+        } else if (side == SIDE_WE &&
+                   worldMap[(int)(mapX - step.x)][mapY] == DOOR) {
+          tile = DOOR_FRAME;
+        }
       }
-
-      hit = tile > 0;
     }
 
     double perpendicularWallDistance;
@@ -569,6 +658,9 @@ int main(void) {
   PlayMusicStream(soundtrack);
 #endif
 
+  door_sfx = LoadSound("./assets/sound-effects/Door.wav");
+  InitializeDoors();
+
   while (!WindowShouldClose()) {
 #if !MUTED
     UpdateMusicStream(soundtrack);
@@ -591,6 +683,7 @@ int main(void) {
     EndDrawing();
 
     UpdatePosition(frameTime);
+    Interact(frameTime);
   }
 
   UnloadColors();
@@ -598,6 +691,8 @@ int main(void) {
 #if !MUTED
   UnloadMusicStream(soundtrack);
 #endif
+
+  UnloadSound(door_sfx);
 
   CloseAudioDevice();
   CloseWindow();
