@@ -6,7 +6,6 @@
 
 #include "game.h"
 
-
 // https://www.reddit.com/r/raylib/comments/hcglzh/comment/g212jbl/?utm_source=share&utm_medium=web2x&context=3
 void DrawFrame(Texture2D frame_tex) {
   UpdateTexture(frame_tex, game.screen_buffer);
@@ -455,7 +454,8 @@ void RenderSprites() {
     game.spriteOrder[i] = i;
     double xComponent = posX - sprites[i].x;
     double yComponent = posY - sprites[i].y;
-    game.spriteDistance[i] = (xComponent * xComponent) + (yComponent * yComponent);
+    game.spriteDistance[i] =
+        (xComponent * xComponent) + (yComponent * yComponent);
   }
   sortSprites(game.spriteOrder, game.spriteDistance, numSprites);
 
@@ -524,8 +524,9 @@ void RenderSprites() {
           // 256 and 128 factors to avoid floats
           int d = y * 256 - screenHeight * 128 + spriteHeight * 128;
           int texY = (d * texHeight) / (spriteHeight * 256);
-          Color color = game.image_textures[sprites[game.spriteOrder[i]].texture]
-                                      [texWidth * texY + texX];
+          Color color =
+              game.image_textures[sprites[game.spriteOrder[i]].texture]
+                                 [texWidth * texY + texX];
           if (color.r > 0 || color.g > 0 || color.b > 0) {
             game.screen_buffer[y * screenWidth + stripe] = color;
           }
@@ -544,6 +545,27 @@ Texture2D LoadInitialFrame() {
       .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
   };
   return LoadTextureFromImage(initial_frame);
+}
+
+#define gunWidth 141
+#define gunHeight 135
+
+void RenderGun() {
+  // TODO: scale sprite by screen height
+  for (int y = 0; y < gunHeight; y++) {
+    for (int x = 0; x < gunWidth; x++) {
+
+      int offset_x = (screenWidth - gunWidth) / 2;
+      int offset_y = (screenHeight - gunHeight);
+
+      Color pixel = game.pistol_textures[0][y * gunWidth + x];
+
+      if (pixel.a > 0) {
+        game.screen_buffer[(offset_y + y) * screenWidth + (offset_x + x)] =
+            pixel;
+      }
+    }
+  }
 }
 
 int main(void) {
@@ -567,6 +589,7 @@ int main(void) {
     RenderFloorAndCeiling();
     RenderWalls();
     RenderSprites();
+    RenderGun();
 
     DrawFrame(frame);
 

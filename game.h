@@ -71,6 +71,7 @@ typedef struct {
   Color *image_textures[NUM_IMAGES];
   size_t image_textures_len;
   Music soundtrack;
+  Color *pistol_textures[1];
 } Game;
 
 extern Game game;

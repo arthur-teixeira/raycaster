@@ -109,15 +109,21 @@ void InitializeDoors() {
   }
 }
 
+void InitPistolTextures() {
+  Image img = LoadImage("./assets/pistol/frame1.png");
+  game.pistol_textures[0] = LoadImageColors(img);
+  UnloadImage(img);
+}
+
 void InitGame() {
   LoadImageTextures();
   InitializeDoors();
+  InitPistolTextures();
   game.door_sfx = LoadSound("./assets/sound-effects/Door.wav");
 #if !MUTED
   game.soundtrack = LoadMusicStream("./assets/soundtrack/ost.wav");
   PlayMusicStream(game.soundtrack);
 #endif
-
 }
 
 void UnloadColors() {
@@ -132,6 +138,4 @@ void EndGame() {
   UnloadMusicStream(game.soundtrack);
 #endif
   UnloadSound(game.door_sfx);
-
 }
-
