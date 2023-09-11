@@ -75,9 +75,7 @@ typedef struct {
   Sound door_sfx;
   Sound pistol_sfx;
   char *images[NUM_IMAGES];
-  size_t images_len;
   Color *image_textures[NUM_IMAGES];
-  size_t image_textures_len;
   Music soundtrack;
   Color *pistol_textures[NUM_PISTOL_FRAMES];
   int pistol_frame;
@@ -93,5 +91,6 @@ extern double planeX;
 extern double planeY;
 
 void InitGame();
+void EndGame();
 
 #endif // GLOBALS_H

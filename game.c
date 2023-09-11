@@ -1,6 +1,7 @@
 #include "game.h"
 #include <raylib.h>
 #include <stddef.h>
+#include <stdio.h>
 
 int worldMap[mapWidth][mapHeight] = {
     {8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 4, 4, 6, 4, 4, 6, 4, 6, 4, 4, 4, 6, 4},
@@ -88,7 +89,9 @@ double dirY = 0;
 double planeX = 0;
 double planeY = 0.66f;
 
-void LoadImageTextures() {
+// PRIVATE METHODS
+
+static void LoadImageTextures() {
   for (size_t i = 0; i < NUM_IMAGES; i++) {
     Image img = LoadImage(game.images[i]);
     game.image_textures[i] = LoadImageColors(img);
@@ -96,7 +99,7 @@ void LoadImageTextures() {
   }
 }
 
-void InitializeDoors() {
+static void InitializeDoors() {
   for (int y = 0; y < mapWidth; y++) {
     for (int x = 0; x < mapHeight; x++) {
       if (worldMap[x][y] == DOOR) {
@@ -109,7 +112,7 @@ void InitializeDoors() {
   }
 }
 
-void InitPistolTextures() {
+static void LoadPistolTextures() {
   for (int i = 0; i < NUM_PISTOL_FRAMES; i++) {
     char path[100];
     sprintf(path, "./assets/pistol/frame%d.png", i + 1);
@@ -119,10 +122,12 @@ void InitPistolTextures() {
   }
 }
 
+// PUBLIC METHODS
+
 void InitGame() {
   LoadImageTextures();
   InitializeDoors();
-  InitPistolTextures();
+  LoadPistolTextures();
   game.door_sfx = LoadSound("./assets/sound-effects/Door.wav");
   game.pistol_sfx = LoadSound("./assets/sound-effects/Pistol.wav");
   game.pistol_frame = 0;
@@ -132,18 +137,18 @@ void InitGame() {
 #endif
 }
 
-void UnloadColors() {
-  for (size_t i = 0; i < NUM_IMAGES; i++) {
-    UnloadImageColors(game.image_textures[i]);
+void UnloadColors(Color **c, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    UnloadImageColors(c[i]);
   }
 }
 
 void EndGame() {
-  UnloadColors();
+  UnloadColors(game.image_textures, NUM_IMAGES);
+  UnloadColors(game.pistol_textures, NUM_PISTOL_FRAMES);
 #if !MUTED
   UnloadMusicStream(game.soundtrack);
 #endif
   UnloadSound(game.door_sfx);
   UnloadSound(game.pistol_sfx);
-  UnloadImageColors(game.pistol_textures[0]);
 }
