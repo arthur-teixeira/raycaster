@@ -98,6 +98,16 @@ void Interact(float frameTime) {
       OpenDoor(posX, posY + (dirY * moveSpeed));
     }
   }
+  if (IsKeyPressed(KEY_LEFT_CONTROL) || IsKeyPressed(KEY_RIGHT_CONTROL)) {
+    PlaySound(game.pistol_sfx);
+    game.pistol_frame = 1;
+  }
+}
+
+void AnimatePistol(float frameTime) {
+  if (game.pistol_frame > 0) {
+    game.pistol_frame = (game.pistol_frame + 1) % (NUM_PISTOL_FRAMES * 2);
+  }
 }
 
 void MoveDoors(float frameTime) {
@@ -547,9 +557,6 @@ Texture2D LoadInitialFrame() {
   return LoadTextureFromImage(initial_frame);
 }
 
-#define gunWidth 141
-#define gunHeight 135
-
 void RenderGun() {
   // TODO: scale sprite by screen height
   for (int y = 0; y < gunHeight; y++) {
@@ -558,7 +565,7 @@ void RenderGun() {
       int offset_x = (screenWidth - gunWidth) / 2;
       int offset_y = (screenHeight - gunHeight);
 
-      Color pixel = game.pistol_textures[0][y * gunWidth + x];
+      Color pixel = game.pistol_textures[game.pistol_frame / 2][y * gunWidth + x];
 
       if (pixel.a > 0) {
         game.screen_buffer[(offset_y + y) * screenWidth + (offset_x + x)] =
@@ -604,6 +611,7 @@ int main(void) {
     UpdatePosition(frameTime);
     Interact(frameTime);
     MoveDoors(frameTime);
+    AnimatePistol(frameTime);
   }
 
   UnloadTexture(frame);

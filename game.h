@@ -23,12 +23,16 @@
 #define mapWidth 24
 #define mapHeight 24
 
+#define gunWidth 360
+#define gunHeight 360
+
 #define ARRAY_LEN(xs) sizeof(xs) / sizeof(xs[0])
 
 #define DOOR 12
 #define DOOR_FRAME 13
 
 #define NUM_IMAGES 13
+#define NUM_PISTOL_FRAMES 5
 
 typedef enum {
   DOOR_CLOSED,
@@ -57,6 +61,9 @@ extern int worldMap[mapWidth][mapHeight];
 extern Sprite sprites[numSprites];
 
 typedef struct {
+} PistolTexture;
+
+typedef struct {
   DoorInfo doors[mapWidth][mapHeight];
   Color screen_buffer[screenHeight * screenWidth];
   double ZBuffer[screenWidth];
@@ -66,12 +73,14 @@ typedef struct {
   double dirX, dirY;
   double planeX, planeY;
   Sound door_sfx;
+  Sound pistol_sfx;
   char *images[NUM_IMAGES];
   size_t images_len;
   Color *image_textures[NUM_IMAGES];
   size_t image_textures_len;
   Music soundtrack;
-  Color *pistol_textures[1];
+  Color *pistol_textures[NUM_PISTOL_FRAMES];
+  int pistol_frame;
 } Game;
 
 extern Game game;
