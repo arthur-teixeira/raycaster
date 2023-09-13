@@ -1,5 +1,7 @@
-#include <stdbool.h>
 #include <math.h>
+#include <raylib.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 #include "game.h"
 
@@ -71,13 +73,19 @@ void RenderSprites() {
     game.spriteDistance[i] =
         (xComponent * xComponent) + (yComponent * yComponent);
   }
+
+  // TODO: change sorting to insertion sort. Although quicksort is generally
+  // faster, this array is small and it will already be sorted most of the
+  // times, so quicksort doesn't make much sense here.
   sortSprites(game.spriteOrder, game.spriteDistance, numSprites);
 
   for (int i = 0; i < numSprites; i++) {
+    Sprite s = sprites[game.spriteOrder[i]];
+
     // Translate position to relative to camera
     Vector2 sprite = {
-        .x = sprites[game.spriteOrder[i]].x - posX,
-        .y = sprites[game.spriteOrder[i]].y - posY,
+        .x = s.x - posX,
+        .y = s.y - posY,
     };
 
     // Transform sprite with the inverse camera matrix
@@ -93,7 +101,7 @@ void RenderSprites() {
     };
 
     int spriteScreenX =
-        (int)((screenWidth / 2) * (1 + transform.x / transform.y));
+        (int)(((float)screenWidth / 2) * (1 + transform.x / transform.y));
 
     // Using the y component of the transformed vector prevents fisheye
     int spriteHeight = (int)floor(fabs(screenHeight / transform.y));
@@ -141,7 +149,7 @@ void RenderSprites() {
           Color color =
               game.image_textures[sprites[game.spriteOrder[i]].texture]
                                  [texWidth * texY + texX];
-          if (color.r > 0 || color.g > 0 || color.b > 0) {
+          if (color.a > 0) {
             game.screen_buffer[y * screenWidth + stripe] = color;
           }
         }

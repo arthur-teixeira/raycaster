@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <math.h>
 #include <raylib.h>
 #include <stdint.h>
@@ -7,6 +8,7 @@
 #include "doors.h"
 #include "game.h"
 #include "gun.h"
+#include "guard.h"
 #include "movement.h"
 #include "raycast.h"
 #include "sprites.h"
@@ -39,8 +41,11 @@ void Interact(float frameTime) {
   if (IsKeyPressed(KEY_LEFT_CONTROL) || IsKeyPressed(KEY_RIGHT_CONTROL)) {
     // TODO: implement fire rate
     if (game.pistol_frame <= 0) {
-      PlaySound(game.pistol_sfx);
-      game.pistol_frame = 1;
+      int r = Shoot();
+       if (r >= 0) {
+         printf("ouch!\n");
+         KillGuard(r);
+       }
     }
   }
 }
@@ -56,6 +61,10 @@ Texture2D LoadInitialFrame() {
 }
 
 int main(void) {
+#if DEBUG
+  assert(TEXTURE_COUNT == NUM_IMAGES);
+#endif
+
   InitWindow(screenWidth, screenHeight, "Raycaster");
   InitAudioDevice();
 #if LIMIT_FPS
@@ -91,6 +100,8 @@ int main(void) {
     UpdatePosition(frameTime);
     Interact(frameTime);
     MoveDoors(frameTime);
+    MoveGuards(frameTime);
+    AnimateDyingGuards(frameTime);
     AnimateGun();
   }
 

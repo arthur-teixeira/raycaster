@@ -51,11 +51,15 @@ Sprite sprites[numSprites] = {
     {15.5, 1.5, 8},
     {16.0, 1.8, 8},
     {16.2, 1.2, 8},
-    {3.5, 2.5, 8},
     {9.5, 15.5, 8},
     {10.0, 15.1, 8},
     {10.5, 15.8, 8},
+
+    // guard
+    {3.5, 2.5, TEXTURE_GUARD_STILL},
 };
+
+Guard guards[numGuards] = {0};
 
 Game game = {
     .doors = {0},
@@ -78,6 +82,16 @@ Game game = {
             "./assets/greenlight.png",
             "./assets/door.png",
             "./assets/doorframe.png",
+            "./assets/guard/walking/frame1.png",
+            "./assets/guard/walking/frame2.png",
+            "./assets/guard/walking/frame3.png",
+            "./assets/guard/walking/frame4.png",
+            "./assets/guard/walking/frame5.png",
+            "./assets/guard/dying/frame1.png",
+            "./assets/guard/dying/frame2.png",
+            "./assets/guard/dying/frame3.png",
+            "./assets/guard/dying/frame4.png",
+            "./assets/guard/dead.png",
         },
     .image_textures = {0},
 };
@@ -112,6 +126,26 @@ static void InitializeDoors() {
   }
 }
 
+static void InitializeGuards() {
+  int guardCount = 0;
+  for (int i = 0; i < numSprites; i++) {
+    float f = 0.4;
+    if (sprites[i].texture == TEXTURE_GUARD_STILL) {
+      guards[guardCount++] = (Guard){
+          .dir =
+              (Vector2){
+                  .y = 1,
+                  .x = 1,
+              },
+          .state = GUARD_STOPPED,
+          .spriteIndex = i,
+          .frameDuration = f,
+          .frameCounter = f,
+      };
+    }
+  }
+}
+
 static void LoadPistolTextures() {
   for (int i = 0; i < NUM_PISTOL_FRAMES; i++) {
     char path[100];
@@ -122,11 +156,18 @@ static void LoadPistolTextures() {
   }
 }
 
+static void UnloadColors(Color **c, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    UnloadImageColors(c[i]);
+  }
+}
+
 // PUBLIC METHODS
 
 void InitGame() {
   LoadImageTextures();
   InitializeDoors();
+  InitializeGuards();
   LoadPistolTextures();
   game.door_sfx = LoadSound("./assets/sound-effects/Door.wav");
   game.pistol_sfx = LoadSound("./assets/sound-effects/Pistol.wav");
@@ -135,12 +176,6 @@ void InitGame() {
   game.soundtrack = LoadMusicStream("./assets/soundtrack/ost.wav");
   PlayMusicStream(game.soundtrack);
 #endif
-}
-
-void UnloadColors(Color **c, size_t n) {
-  for (size_t i = 0; i < n; i++) {
-    UnloadImageColors(c[i]);
-  }
 }
 
 void EndGame() {

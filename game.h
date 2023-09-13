@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 #define LIMIT_FPS 1
-#define FULLSCREEN 0
+#define FULLSCREEN 1
 #define DEBUG 1
 #define MUTED 0
 
@@ -31,8 +31,37 @@
 #define DOOR 12
 #define DOOR_FRAME 13
 
-#define NUM_IMAGES 13
+#define NUM_IMAGES 23
 #define NUM_PISTOL_FRAMES 5
+
+#define LAMP 10
+
+typedef enum {
+  TEXTURE_EAGLE,
+  TEXTURE_REDBRICK,
+  TEXTURE_PURPLESTONE,
+  TEXTURE_GREYSTONE,
+  TEXTURE_BLUESTONE,
+  TEXTURE_MOSSY,
+  TEXTURE_WOOD,
+  TEXTURE_COLORSTONE,
+  TEXTURE_BARREL,
+  TEXTURE_PILLAR,
+  TEXTURE_GREENLIGHT,
+  TEXTURE_DOOR,
+  TEXTURE_DOORFRAME,
+  TEXTURE_GUARD_STILL,
+  TEXTURE_GUARD_W1,
+  TEXTURE_GUARD_W2,
+  TEXTURE_GUARD_W3,
+  TEXTURE_GUARD_W4,
+  TEXTURE_GUARD_D1,
+  TEXTURE_GUARD_D2,
+  TEXTURE_GUARD_D3,
+  TEXTURE_GUARD_D4,
+  TEXTURE_GUARD_D5,
+  TEXTURE_COUNT,
+} TextureIndex;
 
 typedef enum {
   DOOR_CLOSED,
@@ -57,11 +86,26 @@ typedef enum {
   SIDE_NS,
 } SideHit;
 
+typedef enum {
+  GUARD_STOPPED,
+  GUARD_WALKING,
+  GUARD_DYING,
+  GUARD_DEAD,
+} GuardState;
+
+typedef struct {
+  int spriteIndex;
+  GuardState state;
+  Vector2 dir;
+  float frameDuration;
+  float frameCounter;
+} Guard;
+
 extern int worldMap[mapWidth][mapHeight];
 extern Sprite sprites[numSprites];
 
-typedef struct {
-} PistolTexture;
+#define numGuards 1
+extern Guard guards[numGuards];
 
 typedef struct {
   DoorInfo doors[mapWidth][mapHeight];
@@ -83,10 +127,10 @@ typedef struct {
 
 extern Game game;
 
-extern double posX; 
-extern double posY; 
-extern double dirX; 
-extern double dirY; 
+extern double posX;
+extern double posY;
+extern double dirX;
+extern double dirY;
 extern double planeX;
 extern double planeY;
 

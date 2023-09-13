@@ -2,5 +2,6 @@
 #define SPRITES_H
 
 void RenderSprites();
+void MoveGuards(float frameTime);
 
 #endif // SPRITES_H
