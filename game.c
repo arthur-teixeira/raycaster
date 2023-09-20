@@ -30,37 +30,6 @@ int worldMap[mapWidth][mapHeight] = {
     {2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5},
 };
 
-Sprite sprites[numSprites] = {
-    {20.5, 11.5, 10}, // green light in front of playerstart
-    // green lights in every room
-    {18.5, 4.5, 10},
-    {10.0, 4.5, 10},
-    {10.0, 12.5, 10},
-    {3.5, 6.5, 10},
-    {3.5, 20.5, 10},
-    {3.5, 14.5, 10},
-    {14.5, 20.5, 10},
-
-    // row of pillars in front of wall: fisheye test
-    {18.5, 10.5, 9},
-    {18.5, 11.5, 9},
-    {18.5, 12.5, 9},
-
-    // some barrels around the map
-    {21.5, 1.5, 8},
-    {15.5, 1.5, 8},
-    {16.0, 1.8, 8},
-    {16.2, 1.2, 8},
-    {9.5, 15.5, 8},
-    {10.0, 15.1, 8},
-    {10.5, 15.8, 8},
-
-    // guard
-    {3.5, 2.5, TEXTURE_GUARD_STILL},
-};
-
-Guard guards[numGuards] = {0};
-
 Game game = {
     .doors = {0},
     .screen_buffer = {0},
@@ -126,26 +95,6 @@ static void InitializeDoors() {
   }
 }
 
-static void InitializeGuards() {
-  int guardCount = 0;
-  for (int i = 0; i < numSprites; i++) {
-    float f = 0.4;
-    if (sprites[i].texture == TEXTURE_GUARD_STILL) {
-      guards[guardCount++] = (Guard){
-          .dir =
-              (Vector2){
-                  .y = 1,
-                  .x = 1,
-              },
-          .state = GUARD_STOPPED,
-          .spriteIndex = i,
-          .frameDuration = f,
-          .frameCounter = f,
-      };
-    }
-  }
-}
-
 static void LoadPistolTextures() {
   for (int i = 0; i < NUM_PISTOL_FRAMES; i++) {
     char path[100];
@@ -167,7 +116,6 @@ static void UnloadColors(Color **c, size_t n) {
 void InitGame() {
   LoadImageTextures();
   InitializeDoors();
-  InitializeGuards();
   LoadPistolTextures();
   game.door_sfx = LoadSound("./assets/sound-effects/Door.wav");
   game.pistol_sfx = LoadSound("./assets/sound-effects/Pistol.wav");

@@ -5,13 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "actors.h"
 #include "doors.h"
 #include "game.h"
 #include "gun.h"
-#include "guard.h"
 #include "movement.h"
 #include "raycast.h"
-#include "sprites.h"
 
 // https://www.reddit.com/r/raylib/comments/hcglzh/comment/g212jbl/?utm_source=share&utm_medium=web2x&context=3
 void DrawFrame(Texture2D frame_tex) {
@@ -42,10 +41,9 @@ void Interact(float frameTime) {
     // TODO: implement fire rate
     if (game.pistol_frame <= 0) {
       int r = Shoot();
-       if (r >= 0) {
-         printf("ouch!\n");
-         KillGuard(r);
-       }
+      if (r >= 0) {
+        KillActor(r);
+      }
     }
   }
 }
@@ -84,7 +82,7 @@ int main(void) {
 
     CastFloorAndCeiling();
     CastWalls();
-    RenderSprites();
+    RenderActors();
     RenderGun();
 
     DrawFrame(frame);
@@ -100,8 +98,7 @@ int main(void) {
     UpdatePosition(frameTime);
     Interact(frameTime);
     MoveDoors(frameTime);
-    MoveGuards(frameTime);
-    AnimateDyingGuards(frameTime);
+    DoActors(frameTime);
     AnimateGun();
   }
 

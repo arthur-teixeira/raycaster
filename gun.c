@@ -3,18 +3,19 @@
 #include <stdio.h>
 
 #include "game.h"
+#include "actors.h"
 
 // PRIVATE METHODS
 
 // Assumes sprites are already sorted since this logic is executed after the
 // frame rendering
 static int hitGuard(int x, int y) {
-  for (int i = 0; i < numSprites; i++) {
-    Sprite s = sprites[i];
+  for (int i = 0; i < numActors; i++) {
+    Actor s = actors[i];
 
     // TODO: its a bit imprecise, since the sprites do not occupate the entire
     // tile. This is especially problematic for long distance shots
-    if (s.texture >= TEXTURE_GUARD_STILL && s.texture <= TEXTURE_GUARD_W4 &&
+    if (s.state->texture >= TEXTURE_GUARD_STILL && s.state->texture <= TEXTURE_GUARD_W4 &&
         floor(s.x) == x && floor(s.y) == y) {
       return i;
     }

@@ -5,9 +5,9 @@
 #include <stddef.h>
 
 #define LIMIT_FPS 1
-#define FULLSCREEN 1
+#define FULLSCREEN 0
 #define DEBUG 1
-#define MUTED 0
+#define MUTED 1
 
 #if FULLSCREEN
 #define screenWidth 1920
@@ -17,7 +17,7 @@
 #define screenHeight 480
 #endif
 
-#define numSprites 19
+#define numActors 20
 #define texWidth 64
 #define texHeight 64
 #define mapWidth 24
@@ -75,12 +75,6 @@ typedef struct {
   double timer;
 } DoorInfo;
 
-typedef struct {
-  double x;
-  double y;
-  int texture;
-} Sprite;
-
 typedef enum {
   SIDE_WE,
   SIDE_NS,
@@ -93,26 +87,17 @@ typedef enum {
   GUARD_DEAD,
 } GuardState;
 
-typedef struct {
-  int spriteIndex;
-  GuardState state;
-  Vector2 dir;
-  float frameDuration;
-  float frameCounter;
-} Guard;
-
 extern int worldMap[mapWidth][mapHeight];
-extern Sprite sprites[numSprites];
 
-#define numGuards 1
-extern Guard guards[numGuards];
+// #define numGuards 1
+// extern Guard guards[numGuards];
 
 typedef struct {
   DoorInfo doors[mapWidth][mapHeight];
   Color screen_buffer[screenHeight * screenWidth];
   double ZBuffer[screenWidth];
-  int spriteOrder[numSprites];
-  double spriteDistance[numSprites];
+  int spriteOrder[numActors];
+  double spriteDistance[numActors];
   double posX, posY;
   double dirX, dirY;
   double planeX, planeY;

@@ -3,7 +3,125 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "actors.h"
 #include "game.h"
+
+ActorState greenlight = {
+    .texture = TEXTURE_GREENLIGHT,
+    .frameDuration = -1,
+};
+
+ActorState pillar = {
+    .texture = TEXTURE_PILLAR,
+    .frameDuration = -1,
+};
+
+ActorState barrel = {
+    .texture = TEXTURE_BARREL,
+    .frameDuration = -1,
+};
+
+ActorState guard_still;
+ActorState guard_walking1;
+ActorState guard_walking2;
+ActorState guard_walking3;
+ActorState guard_walking4;
+
+ActorState guard_dying1;
+ActorState guard_dying2;
+ActorState guard_dying3;
+ActorState guard_dying4;
+ActorState guard_dead;
+
+ActorState guard_still = {
+    .texture = TEXTURE_GUARD_STILL,
+    .frameDuration = 1, 
+    .next = &guard_walking1,
+};
+
+ActorState guard_walking1 = {
+    .texture = TEXTURE_GUARD_W1,
+    .frameDuration = 0.2,
+    .next = &guard_walking2,
+};
+
+ActorState guard_walking2 = {
+    .texture = TEXTURE_GUARD_W2,
+    .frameDuration = 0.2,
+    .next = &guard_walking3,
+};
+
+ActorState guard_walking3 = {
+    .texture = TEXTURE_GUARD_W3,
+    .frameDuration = 0.2,
+    .next = &guard_walking4,
+};
+
+ActorState guard_walking4 = {
+    .texture = TEXTURE_GUARD_W4,
+    .frameDuration = 0.2,
+    .next = &guard_walking1,
+};
+
+ActorState guard_dying1 = {
+  .texture = TEXTURE_GUARD_D1,
+  .frameDuration = 0.2 / 3,
+  .next = &guard_dying2,
+};
+
+ActorState guard_dying2 = {
+  .texture = TEXTURE_GUARD_D2,
+  .frameDuration = 0.2 / 3,
+  .next = &guard_dying3,
+};
+
+ActorState guard_dying3 = {
+  .texture = TEXTURE_GUARD_D3,
+  .frameDuration = 0.2 / 3,
+  .next = &guard_dying4,
+};
+
+ActorState guard_dying4 = {
+  .texture = TEXTURE_GUARD_D4,
+  .frameDuration = 0.2 / 3,
+  .next = &guard_dead,
+};
+
+ActorState guard_dead = {
+  .texture = TEXTURE_GUARD_D5,
+  .frameDuration = -1,
+};
+
+Actor actors[numActors] = {
+    // green light in front of playerstart
+    {20.5, 11.5, &greenlight, 0, 0, 0},
+    // green lights in every room
+    {18.5, 4.5, &greenlight, 0, 0, 0},
+    {10.0, 4.5, &greenlight, 0, 0, 0},
+    {10.0, 12.5, &greenlight, 0, 0, 0},
+    {3.5, 6.5, &greenlight, 0, 0, 0},
+    {3.5, 20.5, &greenlight, 0, 0, 0},
+    {3.5, 14.5, &greenlight, 0, 0, 0},
+    {14.5, 20.5, &greenlight, 0, 0, 0},
+
+    // row of pillars in front of wall: fisheye test
+    {18.5, 10.5, &pillar, 0, 0, 0},
+    {18.5, 11.5, &pillar, 0, 0, 0},
+    {18.5, 12.5, &pillar, 0, 0, 0},
+
+    // some barrels around the map
+    {21.5, 1.5, &barrel, 0, 0, 0},
+    {15.5, 1.5, &barrel, 0, 0, 0},
+    {16.0, 1.8, &barrel, 0, 0, 0},
+    {16.2, 1.2, &barrel, 0, 0, 0},
+    {9.5, 15.5, &barrel, 0, 0, 0},
+    {10.0, 15.1, &barrel, 0, 0, 0},
+    {10.5, 15.8, &barrel, 0, 0, 0},
+
+    // actors
+    {3.5, 2.5, &guard_still, 0, 0, 0},
+    {4.5, 2.5, &guard_still, 0, 0, 0},
+};
 
 // PRIVATE METHODS
 
@@ -63,13 +181,26 @@ static void sortSprites(int *order, double *dist, int amount) {
   }
 }
 
+void DoActor(Actor *actor, float frameTime) {
+  if (actor->state->frameDuration < 0) { // Static actor
+    return;
+  }
+
+  actor->frameTime -= frameTime;
+
+  if (actor->frameTime < 0) {
+    actor->state = actor->state->next;
+    actor->frameTime = actor->state->frameDuration;
+  }
+}
+
 // PUBLIC METHODS
 
-void RenderSprites() {
-  for (int i = 0; i < numSprites; i++) {
+void RenderActors() {
+  for (int i = 0; i < numActors; i++) {
     game.spriteOrder[i] = i;
-    double xComponent = posX - sprites[i].x;
-    double yComponent = posY - sprites[i].y;
+    double xComponent = posX - actors[i].x;
+    double yComponent = posY - actors[i].y;
     game.spriteDistance[i] =
         (xComponent * xComponent) + (yComponent * yComponent);
   }
@@ -77,10 +208,10 @@ void RenderSprites() {
   // TODO: change sorting to insertion sort. Although quicksort is generally
   // faster, this array is small and it will already be sorted most of the
   // times, so quicksort doesn't make much sense here.
-  sortSprites(game.spriteOrder, game.spriteDistance, numSprites);
+  sortSprites(game.spriteOrder, game.spriteDistance, numActors);
 
-  for (int i = 0; i < numSprites; i++) {
-    Sprite s = sprites[game.spriteOrder[i]];
+  for (int i = 0; i < numActors; i++) {
+    Actor s = actors[game.spriteOrder[i]];
 
     // Translate position to relative to camera
     Vector2 sprite = {
@@ -147,7 +278,7 @@ void RenderSprites() {
           int d = y * 256 - screenHeight * 128 + spriteHeight * 128;
           int texY = (d * texHeight) / (spriteHeight * 256);
           Color color =
-              game.image_textures[sprites[game.spriteOrder[i]].texture]
+              game.image_textures[actors[game.spriteOrder[i]].state->texture]
                                  [texWidth * texY + texX];
           if (color.a > 0) {
             game.screen_buffer[y * screenWidth + stripe] = color;
@@ -156,4 +287,17 @@ void RenderSprites() {
       }
     }
   }
+}
+
+void DoActors(float frameTime) {
+  for (int i = 0; i < numActors; i++) {
+    DoActor(&actors[i], frameTime);
+  }
+}
+
+void KillActor(int i) {
+  Actor *g = &actors[i];
+
+  g->state = &guard_dying1;
+  g->frameTime = g->state->frameDuration;
 }
