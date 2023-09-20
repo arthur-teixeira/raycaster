@@ -3,5 +3,9 @@
 
 void UpdatePosition(float frameTime);
 
-#endif // MOVEMENT_H
+void Move(double moveSpeed, signed char factor);
 
+void MoveEx(double *posX, double *posY, double dirX, double dirY,
+            double moveSpeed, signed char factor);
+
+#endif // MOVEMENT_H

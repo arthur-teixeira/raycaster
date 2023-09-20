@@ -4,26 +4,6 @@
 
 // PRIVATE METHODS
 
-static void Move(double moveSpeed, signed char factor) {
-  int x = posX + (factor * dirX * moveSpeed);
-  int y = posY;
-  int curTile = worldMap[x][y];
-
-  if (curTile == 0 ||
-      (curTile == DOOR && game.doors[x][y].state == DOOR_OPEN)) {
-    posX += factor * dirX * moveSpeed;
-  }
-
-  x = posX;
-  y = posY + (factor * dirY * moveSpeed);
-  curTile = worldMap[x][y];
-
-  if (curTile == 0 ||
-      (curTile == DOOR && game.doors[x][y].state == DOOR_OPEN)) {
-    posY += factor * dirY * moveSpeed;
-  }
-}
-
 static void Rotate(double rotSpeed, signed char factor) {
   double oldDirX = dirX;
   rotSpeed = factor * rotSpeed;
@@ -37,6 +17,31 @@ static void Rotate(double rotSpeed, signed char factor) {
 }
 
 // PUBLIC METHODS
+
+void MoveEx(double *posX, double *posY, double dirX, double dirY,
+                   double moveSpeed, signed char factor) {
+  int x = *posX + (factor * dirX * moveSpeed);
+  int y = *posY;
+  int curTile = worldMap[x][y];
+
+  if (curTile == 0 ||
+      (curTile == DOOR && game.doors[x][y].state == DOOR_OPEN)) {
+    *posX += factor * dirX * moveSpeed;
+  }
+
+  x = *posX;
+  y = *posY + (factor * dirY * moveSpeed);
+  curTile = worldMap[x][y];
+
+  if (curTile == 0 ||
+      (curTile == DOOR && game.doors[x][y].state == DOOR_OPEN)) {
+    *posY += factor * dirY * moveSpeed;
+  }
+}
+
+void Move(double moveSpeed, signed char factor) {
+  MoveEx(&posX, &posY, dirX, dirY, moveSpeed, factor);
+}
 
 void UpdatePosition(float frameTime) {
   double moveSpeed = frameTime * 2.0f;

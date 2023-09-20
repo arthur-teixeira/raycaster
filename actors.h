@@ -13,8 +13,8 @@ typedef struct ActorState {
 } ActorState;
 
 typedef struct {
-  float x;
-  float y;
+  double x;
+  double y;
   ActorState *state;
   float dirX;
   float dirY;
@@ -27,5 +27,6 @@ void RenderActors();
 // void MoveActors(float frameTime);
 void DoActors(float frameTime);
 void KillActor(int i);
+void Path(Actor *actor);
 
 #endif // SPRITES_H

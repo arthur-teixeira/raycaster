@@ -119,6 +119,8 @@ extern double dirY;
 extern double planeX;
 extern double planeY;
 
+extern double frameTime;
+
 void InitGame();
 void EndGame();
 

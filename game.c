@@ -72,6 +72,8 @@ double dirY = 0;
 double planeX = 0;
 double planeY = 0.66f;
 
+double frameTime = 0;
+
 // PRIVATE METHODS
 
 static void LoadImageTextures() {

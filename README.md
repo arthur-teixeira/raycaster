@@ -11,6 +11,7 @@ References:
 - [Transformation Matrix derivation](https://www.youtube.com/watch?v=EZufiIwwqFA&ab_channel=PenandPaperScience)
 - [Cache oblivious matrix transposition](https://en.algorithmica.org/hpc/external-memory/oblivious/)
 - [Cache oblivious algorithms](https://erikdemaine.org/papers/BRICS2002/paper.pdf)
+- [Wolfenstein 3d original source code](https://github.com/id-Software/wolf3d)
 
 ## Quick start
 
@@ -24,8 +25,3 @@ $ ./bin/raycaster
 
 ## To-do list
 - [ ] Find a way to invert the frame buffer matrix, so that we process lines horizontally
-- [X] Try to render whole texture at once?
-- [X] Render thin walls
-- [ ] Doors
-- [ ] Weapon
-- [ ] Enemies

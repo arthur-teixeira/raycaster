@@ -5,6 +5,7 @@
 
 #include "actors.h"
 #include "game.h"
+#include "movement.h"
 
 ActorState greenlight = {
     .texture = TEXTURE_GREENLIGHT,
@@ -43,24 +44,28 @@ ActorState guard_walking1 = {
     .texture = TEXTURE_GUARD_W1,
     .frameDuration = 0.2,
     .next = &guard_walking2,
+    .think = Path,
 };
 
 ActorState guard_walking2 = {
     .texture = TEXTURE_GUARD_W2,
     .frameDuration = 0.2,
     .next = &guard_walking3,
+    .think = Path,
 };
 
 ActorState guard_walking3 = {
     .texture = TEXTURE_GUARD_W3,
     .frameDuration = 0.2,
     .next = &guard_walking4,
+    .think = Path,
 };
 
 ActorState guard_walking4 = {
     .texture = TEXTURE_GUARD_W4,
     .frameDuration = 0.2,
     .next = &guard_walking1,
+    .think = Path,
 };
 
 ActorState guard_dying1 = {
@@ -119,8 +124,8 @@ Actor actors[numActors] = {
     {10.5, 15.8, &barrel, 0, 0, 0},
 
     // actors
-    {3.5, 2.5, &guard_still, 0, 0, 0},
-    {4.5, 2.5, &guard_still, 0, 0, 0},
+    {3.5, 2.5, &guard_still, 1, 1, 0},
+    {4.5, 2.5, &guard_still, 0.1, 0, 0},
 };
 
 // PRIVATE METHODS
@@ -182,13 +187,22 @@ static void sortSprites(int *order, double *dist, int amount) {
 }
 
 void DoActor(Actor *actor, float frameTime) {
+  void (*think)(Actor *);
+
   if (actor->state->frameDuration < 0) { // Static actor
     return;
   }
 
   actor->frameTime -= frameTime;
+  think = actor->state->think;
 
-  if (actor->frameTime < 0) {
+
+  if (actor->frameTime <= 0) {
+    printf("should think\n");
+    if (actor->state->think) {
+      think(actor);
+    }
+
     actor->state = actor->state->next;
     actor->frameTime = actor->state->frameDuration;
   }
@@ -300,4 +314,9 @@ void KillActor(int i) {
 
   g->state = &guard_dying1;
   g->frameTime = g->state->frameDuration;
+}
+
+void Path(Actor *actor) {
+  // TODO: make walking smoother and choose path correctly
+  MoveEx(&actor->x, &actor->y, actor->dirX, actor->dirY, frameTime * 5, 1);
 }

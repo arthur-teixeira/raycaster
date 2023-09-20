@@ -12,6 +12,7 @@
 #include "movement.h"
 #include "raycast.h"
 
+
 // https://www.reddit.com/r/raylib/comments/hcglzh/comment/g212jbl/?utm_source=share&utm_medium=web2x&context=3
 void DrawFrame(Texture2D frame_tex) {
   UpdateTexture(frame_tex, game.screen_buffer);
@@ -47,6 +48,7 @@ void Interact(float frameTime) {
     }
   }
 }
+
 Texture2D LoadInitialFrame() {
   Image initial_frame = {
       .data = game.screen_buffer,
@@ -87,7 +89,7 @@ int main(void) {
 
     DrawFrame(frame);
 
-    double frameTime = GetFrameTime();
+    frameTime = GetFrameTime();
 
 #if DEBUG
     DrawFrameCounter(frameTime);
